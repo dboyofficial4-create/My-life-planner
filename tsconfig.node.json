@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/node.tsbuildinfo",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "emitDeclarationOnly": true,
+    "noEmit": false,
+    "outDir": "./node_modules/.tmp/node"
+  },
+  "include": ["server", "shared", "tests", "vite.config.ts", "vitest.config.ts"]
+}

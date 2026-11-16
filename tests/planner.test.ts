@@ -215,3 +215,17 @@ describe('replanning', () => {
     }
   });
 });
+
+describe('mid-day generation', () => {
+  it('does not report already-passed meal windows as unscheduled', () => {
+    const out = generatePlan(
+      baseInput({
+        notBefore: { date: WEEK[0]!, minute: 14 * 60 },
+        requests: [req({ key: 'meal:breakfast', title: 'Breakfast', category: 'meal', perDay: true, hardWindow: true, idealMinutes: 20, minMinutes: 10, window: { start: 7 * 60, end: 8 * 60 } })],
+      }),
+    );
+    expect(out.unscheduled).toEqual([]);
+    expect(out.items.filter((i) => i.date === WEEK[0])).toHaveLength(0);
+    expect(out.items).toHaveLength(6);
+  });
+});

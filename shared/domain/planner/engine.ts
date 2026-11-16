@@ -199,6 +199,8 @@ export function generatePlan(input: PlanInput): PlanOutput {
       if (req.earliestDate && d < req.earliestDate) return false;
       if (req.latestDate && d > req.latestDate) return false;
       if (input.notBefore && d < input.notBefore.date) return false;
+      // A fixed-window item (e.g. breakfast) whose window has already passed today isn't "unfit" — it's just over.
+      if (input.notBefore && req.hardWindow && d === input.notBefore.date && req.window.end <= input.notBefore.minute) return false;
       return true;
     });
 

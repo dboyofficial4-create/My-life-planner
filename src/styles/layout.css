@@ -1,0 +1,80 @@
+/* ---------- App shell ---------- */
+.shell { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100dvh; }
+.sidebar {
+  position: sticky; top: 0; height: 100dvh; display: flex; flex-direction: column; gap: var(--s-1);
+  padding: var(--s-4) var(--s-3); border-right: 1px solid var(--border); background: var(--surface);
+}
+.brand { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2) var(--s-2) var(--s-4); font-weight: 680; letter-spacing: -0.02em; font-size: var(--text-md); color: var(--text); }
+.brand-mark { width: 26px; height: 26px; border-radius: 7px; background: var(--accent); color: var(--text-inverse); display: grid; place-items: center; }
+.brand-mark svg { width: 15px; height: 15px; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav-section { margin: var(--s-4) var(--s-2) var(--s-1); }
+.nav a {
+  display: flex; align-items: center; gap: var(--s-3); height: 36px; padding: 0 var(--s-3); border-radius: var(--radius);
+  color: var(--text-2); font-size: var(--text-sm); font-weight: 520; text-decoration: none; transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.nav a svg { width: 17px; height: 17px; flex: none; }
+.nav a:hover { background: var(--surface-2); color: var(--text); }
+.nav a[aria-current='page'] { background: var(--accent-soft); color: var(--accent-text); font-weight: 600; }
+.sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: var(--s-2); padding-top: var(--s-3); border-top: 1px solid var(--border); }
+.user-chip { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2); font-size: var(--text-sm); min-width: 0; }
+.avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--surface-3); display: grid; place-items: center; font-size: var(--text-xs); font-weight: 650; color: var(--text-2); flex: none; }
+
+.main { min-width: 0; display: flex; flex-direction: column; }
+.demo-bar { display: flex; align-items: center; justify-content: center; gap: var(--s-3); padding: 6px var(--s-4); background: var(--warning-soft); color: var(--warning); font-size: var(--text-xs); font-weight: 560; border-bottom: 1px solid var(--border); text-align: center; flex-wrap: wrap; }
+.page { width: 100%; max-width: var(--content-max); margin: 0 auto; padding: var(--s-8) var(--s-8) var(--s-12); display: flex; flex-direction: column; gap: var(--s-6); }
+.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap; }
+.page-header p { color: var(--text-2); margin-top: var(--s-1); }
+.page-actions { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+
+.mobile-top { display: none; }
+.tabbar { display: none; }
+
+@media (max-width: 960px) {
+  .page { padding: var(--s-6) var(--s-5) var(--s-10); }
+}
+
+@media (max-width: 760px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { display: none; }
+  .mobile-top { display: flex; align-items: center; justify-content: space-between; padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 20; }
+  .mobile-top .brand { padding: 0; }
+  .page { padding: var(--s-5) var(--s-4) calc(88px + env(safe-area-inset-bottom)); gap: var(--s-5); }
+  .tabbar {
+    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
+    background: var(--surface); border-top: 1px solid var(--border); padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
+  .tabbar a, .tabbar button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; font-size: 11px; color: var(--text-3); text-decoration: none; background: none; border: 0; cursor: pointer; font-weight: 520; }
+  .tabbar svg { width: 20px; height: 20px; }
+  .tabbar a[aria-current='page'] { color: var(--accent-text); }
+}
+
+/* ---------- Auth & onboarding layouts ---------- */
+.auth-wrap { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.auth-aside { background: var(--surface-2); border-right: 1px solid var(--border); padding: var(--s-12); display: flex; flex-direction: column; justify-content: space-between; gap: var(--s-8); }
+.auth-aside h1 { font-size: var(--text-2xl); max-width: 440px; }
+.auth-points { display: flex; flex-direction: column; gap: var(--s-4); max-width: 440px; }
+.auth-point { display: flex; gap: var(--s-3); }
+.auth-point svg { width: 18px; height: 18px; color: var(--accent-text); flex: none; margin-top: 3px; }
+.auth-main { display: grid; place-items: center; padding: var(--s-8) var(--s-5); }
+.auth-card { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: var(--s-5); }
+@media (max-width: 860px) {
+  .auth-wrap { grid-template-columns: minmax(0, 1fr); }
+  .auth-aside { display: none; }
+}
+
+.ob { min-height: 100dvh; display: flex; flex-direction: column; }
+.ob-top { display: flex; align-items: center; gap: var(--s-4); padding: var(--s-4) var(--s-6); border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 10; }
+.ob-progress { flex: 1; display: flex; flex-direction: column; gap: 6px; max-width: 520px; margin: 0 auto; }
+.ob-body { flex: 1; width: 100%; max-width: 720px; margin: 0 auto; padding: var(--s-8) var(--s-5) var(--s-12); display: flex; flex-direction: column; gap: var(--s-6); }
+.ob-head p { color: var(--text-2); margin-top: var(--s-2); max-width: 560px; }
+.ob-foot { position: sticky; bottom: 0; background: var(--surface); border-top: 1px solid var(--border); }
+.ob-foot-inner { max-width: 720px; margin: 0 auto; padding: var(--s-3) var(--s-5); display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); }
+.ob-section { display: flex; flex-direction: column; gap: var(--s-4); padding-top: var(--s-5); border-top: 1px solid var(--border); }
+.ob-section:first-of-type { border-top: 0; padding-top: 0; }
+.why { display: flex; gap: var(--s-2); font-size: var(--text-xs); color: var(--text-3); }
+.why svg { width: 14px; height: 14px; flex: none; margin-top: 2px; }
+@media (max-width: 640px) {
+  .ob-top { padding: var(--s-3) var(--s-4); }
+  .ob-body { padding: var(--s-6) var(--s-4) var(--s-10); }
+}

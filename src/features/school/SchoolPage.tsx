@@ -216,7 +216,7 @@ function ImportDialog({ open, onClose }: { open: boolean; onClose: () => void })
   const [fileName, setFileName] = useState('');
   const invalidate = useInvalidateSchool();
   const toast = useToast();
-  const preview = useMutation({ mutationFn: (t: string) => api.post<{ events: { uid: string; summary: string; date: string; course: string | null; type: string; duplicate: boolean }[]; skipped: number; past: number }>('/school/import-ics', { text: t, dryRun: true }) });
+  const preview = useMutation({ mutationFn: (t: string) => api.post<{ events: { uid: string; summary: string; date: string; course: string | null; type: string; duplicate: boolean }[]; skipped: number; past: number; scheduleDays?: number }>('/school/import-ics', { text: t, dryRun: true }) });
   const commit = useMutation({
     mutationFn: () => api.post<{ created: number }>('/school/import-ics', { text, dryRun: false }),
     onSuccess: (r) => {
@@ -263,6 +263,9 @@ function ImportDialog({ open, onClose }: { open: boolean; onClose: () => void })
         {preview.isPending && <p className="small muted">Reading file…</p>}
         {preview.error && <Callout tone="danger">{errorMessage(preview.error)}</Callout>}
         {commit.error && <Callout tone="danger">{errorMessage(commit.error)}</Callout>}
+        {!!preview.data?.scheduleDays && (
+          <p className="xsmall subtle">Skipped {preview.data.scheduleDays} schedule note{preview.data.scheduleDays === 1 ? '' : 's'} (like “A Day”, “B Day” or “No School”) — they aren’t work.</p>
+        )}
         {preview.data && (
           preview.data.events.length === 0 ? (
             <Callout tone="info">No upcoming items found in this file{preview.data.past ? ` (${preview.data.past} past items were ignored)` : ''}.</Callout>

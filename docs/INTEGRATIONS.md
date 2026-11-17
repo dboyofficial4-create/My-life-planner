@@ -16,6 +16,7 @@ Policies: Waypoint never asks for school passwords and never scrapes restricted 
 * **What it reads:** `GET /api/v1/courses?enrollment_state=active&include[]=total_scores` and `GET /api/v1/courses/:id/assignment_groups?include[]=assignments&include[]=submission`. It only reads, never writes.
 * **Safety:** https only; no IP or localhost hosts; redirects aren't followed; pagination links must stay on the same host; the token is never logged, returned or exported.
 * **Mapping:** weighted courses get one confirmed category per assignment group. Points-based courses get a single 100% category, so Waypoint's maths matches Canvas. Submitted or excused work is marked done; work you marked done is never reopened. Same-named manual courses, and items from an earlier .ics import, are adopted instead of duplicated.
+* **Schedule notes:** items titled like "A Day", "B Day" or "No School" are skipped in both Canvas sync and calendar-file import, and previously imported ones are removed (manual items are never touched).
 * **Limits:** sync is manual ("Sync now"); up to 25 courses; Canvas's own grade can differ from the calculation (dropped scores, late policies, extra credit), so both are shown.
 * **Revoking:** a third party can't revoke a personal token without its id, so disconnecting deletes Waypoint's copy and tells the user to delete the token in Canvas (Account → Settings → Approved Integrations).
 * **Next step (not built):** OAuth with a school-issued Developer Key, for schools that block personal tokens.

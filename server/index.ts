@@ -3,6 +3,7 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { existsSync, readFileSync } from 'node:fs';
 import { Db } from './db';
 import { createApp } from './app';
+import { UserStore } from './repos/store';
 import { purgeExpiredDemos } from './services/demo';
 import { resolveEncryptionKey } from './auth/keys';
 import { dirname, join } from 'node:path';
@@ -29,6 +30,12 @@ if (prod && existsSync('dist/client/index.html')) {
   app.use('/assets/*', serveStatic({ root: 'dist/client' }));
   app.use('/favicon.svg', serveStatic({ root: 'dist/client' }));
   app.get('*', (c) => c.html(index));
+}
+
+// Clean up schedule notes ("A Day", "B Day", "No School" …) imported before imports learned to skip them.
+for (const { id } of db.all<{ id: string }>("SELECT DISTINCT user_id AS id FROM assignments WHERE source <> 'manual'")) {
+  const store = new UserStore(db, id);
+  if (store.deleteImportedScheduleNotes() > 0) store.markStale('0000-01-01');
 }
 
 const purge = () => {

@@ -254,3 +254,18 @@ describe('personal care', () => {
     expect(r.seeAClinicianIf.length).toBeGreaterThan(0);
   });
 });
+
+describe('schedule notes (not work)', () => {
+  it('recognises A/B days and days off', async () => {
+    const { isScheduleNote } = await import('../shared/domain/school/ics');
+    for (const t of ['A Day', 'B Day', 'b-day', 'Day A', 'A DAY', 'B Day Schedule', 'A Day (late start)', 'A Day [Biology]', 'Today is a B day', 'No School', 'NO SCHOOL', 'No School - Thanksgiving Break', 'No School: Teacher Workday', 'No Classes', 'School Closed', 'Student Holiday', 'Students not in session']) {
+      expect(isScheduleNote(t), t).toBe(true);
+    }
+  });
+  it('keeps real work, even when it mentions a day', async () => {
+    const { isScheduleNote } = await import('../shared/domain/school/ics');
+    for (const t of ['B Day quiz', 'A day at the museum essay', 'Unit 3 test', 'No school — finish essay draft', 'No School: reading packet due', 'Day A homework', 'Holiday card project', 'Schooling reflection', '']) {
+      expect(isScheduleNote(t), t).toBe(false);
+    }
+  });
+});

@@ -6,7 +6,7 @@ import { AssignmentInput, CourseInput, GradeCategoryInput, GradeEntryInput } fro
 import { DEFAULT_MINUTES } from '../../shared/schemas/onboarding';
 import { currentGrade, gradeNeeded } from '../../shared/domain/school/grades';
 import { splitIntoSteps } from '../../shared/domain/school/study';
-import { guessAssignmentType, parseIcs } from '../../shared/domain/school/ics';
+import { guessAssignmentType, isScheduleNote, parseIcs } from '../../shared/domain/school/ics';
 import { startOfWeek } from '../../shared/domain/time';
 import { loadContext } from '../services/context';
 
@@ -132,11 +132,15 @@ schoolRoutes.post('/import-ics', async (c) => {
     throw new HttpError(422, 'bad_file', (e as Error).message);
   }
   const courses = new Map(store.courses().map((x) => [x.name.toLowerCase(), x.id]));
-  const events = parsed.events.filter((e) => e.date >= ctx.today);
+  const upcoming = parsed.events.filter((e) => e.date >= ctx.today);
+  // Schedule notes ("A Day", "B Day", "No School" …) are not work — never import them.
+  const events = upcoming.filter((e) => !isScheduleNote(e.summary));
+  const scheduleDays = upcoming.length - events.length;
   const preview = events.map((e) => ({ ...e, type: guessAssignmentType(e.summary), duplicate: store.hasExternalAssignment('import:ics', e.uid) }));
-  if (input.dryRun) return c.json({ events: preview, skipped: parsed.skipped, past: parsed.events.length - events.length });
+  if (input.dryRun) return c.json({ events: preview, skipped: parsed.skipped, past: parsed.events.length - upcoming.length, scheduleDays });
   let created = 0;
   store.tx(() => {
+    store.deleteImportedScheduleNotes();
     for (const e of preview) {
       if (e.duplicate) continue;
       let courseId: string | null = null;

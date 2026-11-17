@@ -1,6 +1,6 @@
 import type { UserStore } from '../repos/store';
 import { addDays, todayIn, type LocalDate } from '../../shared/domain/time';
-import { guessAssignmentType } from '../../shared/domain/school/ics';
+import { guessAssignmentType, isScheduleNote } from '../../shared/domain/school/ics';
 import { DEFAULT_MINUTES } from '../../shared/schemas/onboarding';
 import type { AssignmentInput } from '../../shared/schemas';
 import type { CanvasAssignment, CanvasAssignmentGroup, CanvasClient, CanvasCourse, CanvasSubmission } from '../integrations/canvas';
@@ -58,6 +58,7 @@ export async function syncCanvas(store: UserStore, client: CanvasClient, timeZon
   summary.skippedCourses += Math.max(0, courses.length - MAX_COURSES);
 
   store.tx(() => {
+    store.deleteImportedScheduleNotes();
     for (const { course, groups } of fetched) {
       const score = (course.enrollments ?? []).find((e) => e.computed_current_score != null)?.computed_current_score ?? null;
       const name = (course.name || course.course_code || `Course ${course.id}`).slice(0, 80);
@@ -82,7 +83,7 @@ export async function syncCanvas(store: UserStore, client: CanvasClient, timeZon
             store.upsertExternalGrade(CANVAS_SOURCE, { courseId, categoryId, externalId: `submission:${a.id}`, title: a.name.slice(0, 100), pointsEarned: s.score, pointsPossible: a.points_possible! });
             summary.grades++;
           }
-          if (!a.due_at) continue;
+          if (!a.due_at || isScheduleNote(a.name)) continue;
           const due = todayIn(timeZone, new Date(a.due_at));
           if (due < earliest) continue;
           const type = assignmentType(a);

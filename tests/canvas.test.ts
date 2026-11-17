@@ -45,6 +45,8 @@ function fakeCanvas(opts: { token?: string; weighted?: boolean; evilNext?: boole
           id: 2, name: 'Labs', group_weight: 40,
           assignments: [
             { id: 1003, name: 'Microscope lab', due_at: '2026-11-17T04:59:00Z', points_possible: 20, published: true, submission: { workflow_state: 'submitted', submitted_at: '2026-11-16T01:00:00Z', score: null } },
+            { id: 1006, name: 'No School', due_at: '2026-11-26T04:59:00Z', points_possible: 0, published: true },
+            { id: 1007, name: 'B Day', due_at: '2026-11-18T04:59:00Z', points_possible: 0, published: true },
             { id: 1004, name: 'Draft lab (unpublished)', due_at: '2026-11-25T04:59:00Z', points_possible: 20, published: false },
             { id: 1005, name: 'Lab 1', due_at: '2026-10-01T04:59:00Z', points_possible: 20, published: true, submission: { workflow_state: 'graded', score: 19, submitted_at: '2026-09-30T20:00:00Z' } },
           ],
@@ -162,6 +164,8 @@ describe('Canvas connection & sync', () => {
     expect(byTitle['Quiz 5']).toMatchObject({ type: 'quiz' });
     expect(byTitle['Unit 1 test']).toBeUndefined(); // older than 30 days: grade only
     expect(byTitle['Draft lab (unpublished)']).toBeUndefined();
+    expect(byTitle['No School']).toBeUndefined();
+    expect(byTitle['B Day']).toBeUndefined();
     expect(school.courses.some((x: { name: string }) => x.name.includes('Teaching Assistant'))).toBe(false);
   });
 

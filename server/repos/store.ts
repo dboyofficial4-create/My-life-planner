@@ -5,6 +5,7 @@ import type { StoredItem } from '../../shared/domain/planner/replan';
 import type { PlanItem } from '../../shared/domain/planner/types';
 import type { MealEntry } from '../../shared/domain/nutrition/mealplan';
 import type { MealSlot } from '../../shared/domain/nutrition/recipes';
+import { isScheduleNote } from '../../shared/domain/school/ics';
 
 const now = () => new Date().toISOString();
 const uid = () => randomUUID();
@@ -583,6 +584,16 @@ export class UserStore {
       'INSERT INTO grade_entries (id, user_id, course_id, category_id, title, points_earned, points_possible, source, external_id, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       uid(), this.userId, e.courseId, e.categoryId, e.title, e.pointsEarned, e.pointsPossible, source, e.externalId, t,
     );
+  }
+
+  /** Remove imported schedule notes ("A Day", "B Day", "No School" …) — not work. Returns how many were removed. */
+  deleteImportedScheduleNotes(): number {
+    const rows = this.db.all<{ id: string; title: string }>("SELECT id, title FROM assignments WHERE user_id = ? AND source <> 'manual'", this.userId);
+    let n = 0;
+    for (const r of rows) {
+      if (isScheduleNote(r.title)) n += this.db.run('DELETE FROM assignments WHERE id = ? AND user_id = ?', r.id, this.userId).changes;
+    }
+    return n;
   }
 
   /** Delete everything imported from a source (used when disconnecting with "remove imported data"). */

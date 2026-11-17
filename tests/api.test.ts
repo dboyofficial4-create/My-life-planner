@@ -258,6 +258,32 @@ describe('integrations', () => {
   });
 });
 
+describe('schedule notes', () => {
+  it('skips A/B days and No School on import and cleans up ones imported earlier', async () => {
+    const c = await newUser('notes@example.com');
+    // Simulate items imported by an older version, plus a manual item that must be left alone.
+    const userId = db.get<{ id: string }>("SELECT id FROM users WHERE email = 'notes@example.com'")!.id;
+    for (const [title, source] of [['No School', 'import:ics'], ['B Day', 'canvas'], ['A Day', 'manual']] as const) {
+      db.run("INSERT INTO assignments (id, user_id, title, type, due_date, estimated_minutes, source, external_id, updated_at) VALUES (?, ?, ?, 'other', '2026-11-18', 60, ?, ?, ?)", `old-${title}`, userId, title, source, source === 'manual' ? null : `x-${title}`, new Date().toISOString());
+    }
+    const ics = ['BEGIN:VCALENDAR',
+      'BEGIN:VEVENT', 'UID:e1', 'SUMMARY:A Day', 'DTSTART;VALUE=DATE:20261118', 'END:VEVENT',
+      'BEGIN:VEVENT', 'UID:e2', 'SUMMARY:B Day', 'DTSTART;VALUE=DATE:20261119', 'END:VEVENT',
+      'BEGIN:VEVENT', 'UID:e3', 'SUMMARY:No School - Thanksgiving Break', 'DTSTART;VALUE=DATE:20261126', 'END:VEVENT',
+      'BEGIN:VEVENT', 'UID:e4', 'SUMMARY:Membrane lab [Biology]', 'DTSTART;VALUE=DATE:20261120', 'END:VEVENT',
+      'END:VCALENDAR'].join('\n');
+    const dry = (await c.post('/api/school/import-ics', { text: ics, dryRun: true })).json;
+    expect(dry.events.map((e: { summary: string }) => e.summary)).toEqual(['Membrane lab']);
+    expect(dry.scheduleDays).toBe(3);
+    expect((await c.post('/api/school/import-ics', { text: ics, dryRun: false })).json.created).toBe(1);
+    const titles = (await c.get('/api/school')).json.assignments.map((a: { title: string }) => a.title).sort();
+    expect(titles).toEqual(['A Day', 'Cell test', 'Membrane lab']); // manual "A Day" kept; imported notes removed
+    // No study time is ever planned for schedule notes.
+    const plan = (await c.get('/api/plan')).json;
+    expect(plan.items.some((i: { title: string }) => /No School|B Day/.test(i.title))).toBe(false);
+  });
+});
+
 describe('demo & account', () => {
   it('creates a labelled demo account with a full plan', async () => {
     const c = new Client();

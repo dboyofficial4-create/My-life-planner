@@ -86,3 +86,37 @@ export function guessAssignmentType(title: string): 'homework' | 'project' | 'es
   if (/homework|hw|worksheet|problem set|assignment/.test(t)) return 'homework';
   return 'other';
 }
+
+/** Words that may follow a rotation label without making it real work ("B Day schedule", "A Day late start"). */
+const SCHEDULE_WORDS = new Set(['schedule', 'rotation', 'block', 'bell', 'late', 'start', 'early', 'release', 'dismissal', 'minimum', 'half', 'day', 'only', 'odd', 'even']);
+
+/** If any of these appear, the item is real work even if it mentions a day off ("No school — essay due"). */
+const WORK_WORDS = /\b(homework|hw|quiz|test|exam|essay|project|assignment|due|worksheet|reading|lab|presentation|study|review|packet)\b/;
+
+const NO_SCHOOL = /^(?:no school|no classes?|school closed|school closure|student holiday|students? (?:not in session|off)|no students)\b/;
+
+function normalise(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/\([^)]*\)|\[[^\]]*\]/g, ' ') // drop "(late start)" / "[Course]"
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * True for calendar notes that describe the school schedule rather than work:
+ *  - A/B rotation-day labels: "A Day", "B-Day", "Day A", "B day schedule", "A Day (late start)"
+ *  - days off: "No School", "No School - Thanksgiving Break", "No Classes", "School Closed", "Student Holiday"
+ * Imports skip these. Real items such as "B Day quiz", "A day at the museum essay"
+ * or "No school — finish essay draft" don't match.
+ */
+export function isScheduleNote(title: string): boolean {
+  const t = normalise(title);
+  if (!t) return false;
+  if (NO_SCHOOL.test(t)) return !WORK_WORDS.test(t);
+  const m = /^(?:(?:today is|it is|its)\s+)?(?:an?\s+)?(?:([ab])\s*day|day\s*([ab]))(?:\s+(.*))?$/.exec(t);
+  if (!m) return false;
+  const rest = m[3]?.trim();
+  return !rest || rest.split(' ').every((w) => SCHEDULE_WORDS.has(w));
+}

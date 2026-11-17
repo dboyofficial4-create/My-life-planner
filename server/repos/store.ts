@@ -83,6 +83,9 @@ export interface CourseRow {
   targetGrade: number | null;
   source: string;
   updatedAt: string;
+  /** Current score reported by an integration (e.g. Canvas), if any. */
+  externalGrade: number | null;
+  externalGradeAt: string | null;
 }
 export interface AssignmentRow {
   id: string;
@@ -374,8 +377,8 @@ export class UserStore {
 
   courses(): CourseRow[] {
     return this.db
-      .all<{ id: string; name: string; difficulty: number; target_grade: number | null; source: string; updated_at: string }>('SELECT * FROM courses WHERE user_id = ? ORDER BY name', this.userId)
-      .map((r) => ({ id: r.id, name: r.name, difficulty: r.difficulty, targetGrade: r.target_grade, source: r.source, updatedAt: r.updated_at }));
+      .all<{ id: string; name: string; difficulty: number; target_grade: number | null; source: string; updated_at: string; external_grade: number | null; external_grade_at: string | null }>('SELECT * FROM courses WHERE user_id = ? ORDER BY name', this.userId)
+      .map((r) => ({ id: r.id, name: r.name, difficulty: r.difficulty, targetGrade: r.target_grade, source: r.source, updatedAt: r.updated_at, externalGrade: r.external_grade, externalGradeAt: r.external_grade_at }));
   }
 
   course(id: string) {
@@ -445,8 +448,8 @@ export class UserStore {
 
   gradeCategories(courseId: string) {
     return this.db
-      .all<{ id: string; name: string; weight: number; confirmed: number }>('SELECT id, name, weight, confirmed FROM grade_categories WHERE user_id = ? AND course_id = ? ORDER BY name', this.userId, courseId)
-      .map((r) => ({ id: r.id, name: r.name, weight: r.weight, confirmed: !!r.confirmed }));
+      .all<{ id: string; name: string; weight: number; confirmed: number; source: string }>('SELECT id, name, weight, confirmed, source FROM grade_categories WHERE user_id = ? AND course_id = ? ORDER BY name', this.userId, courseId)
+      .map((r) => ({ id: r.id, name: r.name, weight: r.weight, confirmed: !!r.confirmed, source: r.source }));
   }
 
   createGradeCategory(courseId: string, c: { name: string; weight: number; confirmed: boolean }): string | null {
@@ -501,6 +504,93 @@ export class UserStore {
 
   deleteIntegration(provider: string) {
     this.db.run('DELETE FROM integrations WHERE user_id = ? AND provider = ?', this.userId, provider);
+  }
+
+  /* ---------- integration sync (upserts keyed by source + external id) ---------- */
+
+  integrationToken(provider: string): string | null {
+    return this.db.get<{ token_enc: string | null }>('SELECT token_enc FROM integrations WHERE user_id = ? AND provider = ?', this.userId, provider)?.token_enc ?? null;
+  }
+
+  /** Find or create a course for an external id; links a same-named manual course instead of duplicating it. */
+  upsertExternalCourse(source: string, externalId: string, name: string, grade: number | null): { id: string; created: boolean } {
+    const t = now();
+    const existing =
+      this.db.get<{ id: string }>('SELECT id FROM courses WHERE user_id = ? AND source = ? AND external_id = ?', this.userId, source, externalId) ??
+      this.db.get<{ id: string }>("SELECT id FROM courses WHERE user_id = ? AND external_id IS NULL AND lower(name) = lower(?)", this.userId, name);
+    if (existing) {
+      this.db.run('UPDATE courses SET source = ?, external_id = ?, external_grade = ?, external_grade_at = ?, updated_at = ? WHERE id = ? AND user_id = ?', source, externalId, grade, t, t, existing.id, this.userId);
+      return { id: existing.id, created: false };
+    }
+    const id = uid();
+    this.db.run(
+      'INSERT INTO courses (id, user_id, name, difficulty, target_grade, source, external_id, external_grade, external_grade_at, updated_at) VALUES (?, ?, ?, 3, NULL, ?, ?, ?, ?, ?)',
+      id, this.userId, name, source, externalId, grade, t, t,
+    );
+    return { id, created: true };
+  }
+
+  /** Insert or update an imported assignment. Never reopens work the user marked done. */
+  upsertExternalAssignment(
+    source: string,
+    externalId: string,
+    a: { courseId: string; title: string; type: AssignmentInput['type']; dueDate: string; estimatedMinutes: number; done: boolean },
+  ): 'created' | 'updated' {
+    const t = now();
+    const existing =
+      this.db.get<{ id: string }>('SELECT id FROM assignments WHERE user_id = ? AND source = ? AND external_id = ?', this.userId, source, externalId) ??
+      // Adopt a matching item imported earlier from a calendar file, so it isn't duplicated.
+      this.db.get<{ id: string }>("SELECT id FROM assignments WHERE user_id = ? AND source = 'import:ics' AND lower(title) = lower(?) AND due_date = ?", this.userId, a.title, a.dueDate);
+    if (existing) {
+      this.db.run(
+        "UPDATE assignments SET source = ?, external_id = ?, course_id = ?, title = ?, due_date = ?, status = CASE WHEN ? THEN 'done' ELSE status END, updated_at = ? WHERE id = ? AND user_id = ?",
+        source, externalId, a.courseId, a.title, a.dueDate, a.done ? 1 : 0, t, existing.id, this.userId,
+      );
+      return 'updated';
+    }
+    this.db.run(
+      'INSERT INTO assignments (id, user_id, course_id, title, type, due_date, estimated_minutes, status, notes, source, external_id, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      uid(), this.userId, a.courseId, a.title, a.type, a.dueDate, a.estimatedMinutes, a.done ? 'done' : 'open', '', source, externalId, t,
+    );
+    return 'created';
+  }
+
+  upsertExternalCategory(source: string, courseId: string, externalId: string, name: string, weight: number, confirmed: boolean): string {
+    const existing = this.db.get<{ id: string }>('SELECT id FROM grade_categories WHERE user_id = ? AND course_id = ? AND source = ? AND external_id = ?', this.userId, courseId, source, externalId);
+    if (existing) {
+      this.db.run('UPDATE grade_categories SET name = ?, weight = ?, confirmed = ? WHERE id = ? AND user_id = ?', name, weight, confirmed ? 1 : 0, existing.id, this.userId);
+      return existing.id;
+    }
+    const id = uid();
+    this.db.run('INSERT INTO grade_categories (id, user_id, course_id, name, weight, confirmed, source, external_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', id, this.userId, courseId, name, weight, confirmed ? 1 : 0, source, externalId);
+    return id;
+  }
+
+  /** Remove imported categories for a course that the source no longer reports. */
+  pruneExternalCategories(source: string, courseId: string, keepIds: string[]) {
+    const rows = this.db.all<{ id: string }>('SELECT id FROM grade_categories WHERE user_id = ? AND course_id = ? AND source = ?', this.userId, courseId, source);
+    for (const r of rows) if (!keepIds.includes(r.id)) this.db.run('DELETE FROM grade_categories WHERE id = ? AND user_id = ?', r.id, this.userId);
+  }
+
+  upsertExternalGrade(source: string, e: { courseId: string; categoryId: string; externalId: string; title: string; pointsEarned: number; pointsPossible: number }) {
+    const t = now();
+    const existing = this.db.get<{ id: string }>('SELECT id FROM grade_entries WHERE user_id = ? AND source = ? AND external_id = ?', this.userId, source, e.externalId);
+    if (existing) {
+      this.db.run('UPDATE grade_entries SET course_id = ?, category_id = ?, title = ?, points_earned = ?, points_possible = ?, updated_at = ? WHERE id = ? AND user_id = ?', e.courseId, e.categoryId, e.title, e.pointsEarned, e.pointsPossible, t, existing.id, this.userId);
+      return;
+    }
+    this.db.run(
+      'INSERT INTO grade_entries (id, user_id, course_id, category_id, title, points_earned, points_possible, source, external_id, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      uid(), this.userId, e.courseId, e.categoryId, e.title, e.pointsEarned, e.pointsPossible, source, e.externalId, t,
+    );
+  }
+
+  /** Delete everything imported from a source (used when disconnecting with "remove imported data"). */
+  deleteSourceData(source: string) {
+    this.db.run('DELETE FROM grade_entries WHERE user_id = ? AND source = ?', this.userId, source);
+    this.db.run('DELETE FROM grade_categories WHERE user_id = ? AND source = ?', this.userId, source);
+    this.db.run('DELETE FROM assignments WHERE user_id = ? AND source = ?', this.userId, source);
+    this.db.run('DELETE FROM courses WHERE user_id = ? AND source = ?', this.userId, source);
   }
 
   /* ---------- progress ---------- */

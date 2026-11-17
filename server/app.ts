@@ -19,6 +19,8 @@ export interface AppConfig {
   /** 32-byte base64 key for encrypting integration tokens at rest. Optional until an integration needs it. */
   encryptionKey?: string;
   canvas?: { clientId: string; clientSecret: string; redirectUri: string };
+  /** fetch override for tests (external API calls). */
+  fetch?: typeof fetch;
   /** Clock override for tests. */
   now?: () => Date;
 }

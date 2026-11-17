@@ -212,4 +212,16 @@ CREATE TABLE progress_logs (
 CREATE INDEX progress_user_date ON progress_logs(user_id, date);
 `,
   },
+  {
+    id: 2,
+    name: 'canvas_sync',
+    sql: `
+ALTER TABLE courses ADD COLUMN external_grade REAL;
+ALTER TABLE courses ADD COLUMN external_grade_at TEXT;
+ALTER TABLE grade_categories ADD COLUMN source TEXT NOT NULL DEFAULT 'manual';
+ALTER TABLE grade_categories ADD COLUMN external_id TEXT;
+ALTER TABLE grade_entries ADD COLUMN external_id TEXT;
+CREATE INDEX courses_external ON courses(user_id, source, external_id);
+`,
+  },
 ];

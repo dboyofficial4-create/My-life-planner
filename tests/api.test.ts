@@ -237,9 +237,11 @@ describe('integrations', () => {
   it('reports honest status and fails clearly without credentials', async () => {
     const c = await newUser('i@example.com');
     const list = (await c.get('/api/integrations')).json.integrations;
-    expect(list.find((i: { id: string }) => i.id === 'canvas')).toMatchObject({ configured: false, status: 'needs_credentials' });
+    // This app instance has no encryption key, so Canvas tokens can't be stored safely.
+    expect(list.find((i: { id: string }) => i.id === 'canvas')).toMatchObject({ configured: false, status: 'available' });
     expect(list.find((i: { id: string }) => i.id === 'home_access_center').status).toBe('not_supported');
-    expect((await c.post('/api/integrations/canvas/connect')).status).toBe(503);
+    expect((await c.post('/api/integrations/canvas/token', { baseUrl: 'school.instructure.com', token: 'x'.repeat(30), consent: true })).status).toBe(503);
+    expect((await c.post('/api/integrations/canvas/connect')).status).toBe(400);
     expect((await c.post('/api/integrations/home_access_center/connect')).status).toBe(501);
   });
 

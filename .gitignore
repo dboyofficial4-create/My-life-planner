@@ -3,6 +3,7 @@ dist
 *.tsbuildinfo
 data/*.db
 data/*.db-*
+data/.encryption-key
 .env
 .env.local
 coverage

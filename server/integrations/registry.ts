@@ -39,18 +39,26 @@ export const INTEGRATIONS: IntegrationDef[] = [
   {
     id: 'canvas',
     connectable: true,
-    isConfigured: (cfg) => !!cfg.canvas && !!cfg.encryptionKey,
+    isConfigured: (cfg) => !!cfg.encryptionKey,
     describe: {
       name: 'Canvas LMS',
       module: 'school',
-      status: 'needs_credentials',
-      implemented: ['Connection status, disconnect, and encrypted token storage (AES-256-GCM) are built.', 'Course and assignment import is not yet implemented.'],
-      requires: [
-        'A Canvas Developer Key (OAuth2 client ID & secret) issued by your school’s Canvas administrator for this app.',
-        'Server environment variables CANVAS_CLIENT_ID, CANVAS_CLIENT_SECRET, CANVAS_REDIRECT_URI and APP_ENCRYPTION_KEY.',
-        'Each school runs its own Canvas instance, so approval is per institution.',
+      status: 'available',
+      implemented: [
+        'Connect with a personal access token you create in Canvas (Account → Settings → New Access Token).',
+        'Imports active courses, assignments due from 30 days ago onward, submission status, assignment groups and weights, scores, and Canvas’s current course grade.',
+        'Sync again any time; items update instead of duplicating. Imported items are labelled “From Canvas”.',
+        'The token is encrypted (AES-256-GCM), only sent to your school’s Canvas address, and never shown again.',
       ],
-      unsupported: ['Logging in with your Canvas password — Waypoint never asks for it.'],
+      requires: [
+        'Your school’s Canvas address and a personal access token. Some schools turn off token creation for students — if “New Access Token” is missing, use the calendar-file import instead.',
+        'Read-only use: Waypoint never submits work or changes anything in Canvas.',
+      ],
+      unsupported: [
+        'Logging in with your Canvas password — Waypoint never asks for it.',
+        'Automatic background sync — press “Sync now” to refresh.',
+        'School-wide sign-in (OAuth) needs a Developer Key from your school’s Canvas admin and isn’t built yet.',
+      ],
       fallback: 'Import your Canvas calendar feed (.ics) or enter assignments manually.',
     },
   },

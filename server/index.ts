@@ -4,11 +4,14 @@ import { existsSync, readFileSync } from 'node:fs';
 import { Db } from './db';
 import { createApp } from './app';
 import { purgeExpiredDemos } from './services/demo';
+import { resolveEncryptionKey } from './auth/keys';
+import { dirname, join } from 'node:path';
 
 // `--production` works on every OS (Windows can't set env vars inline in npm scripts).
 const prod = process.env.NODE_ENV === 'production' || process.argv.includes('--production');
 const port = Number(process.env.PORT ?? 8787);
-const db = new Db(process.env.DATABASE_PATH ?? 'data/waypoint.db');
+const dbPath = process.env.DATABASE_PATH ?? 'data/waypoint.db';
+const db = new Db(dbPath);
 
 const canvas =
   process.env.CANVAS_CLIENT_ID && process.env.CANVAS_CLIENT_SECRET && process.env.CANVAS_REDIRECT_URI
@@ -17,7 +20,7 @@ const canvas =
 
 const app = createApp(db, {
   secureCookies: prod && process.env.INSECURE_COOKIES !== '1',
-  encryptionKey: process.env.APP_ENCRYPTION_KEY,
+  encryptionKey: resolveEncryptionKey(process.env.APP_ENCRYPTION_KEY, join(dirname(dbPath), '.encryption-key')),
   canvas,
 });
 

@@ -33,7 +33,9 @@ interface Course {
   targetGrade: number | null;
   source: string;
   updatedAt: string;
-  categories: { id: string; name: string; weight: number; confirmed: boolean }[];
+  externalGrade: number | null;
+  externalGradeAt: string | null;
+  categories: { id: string; name: string; weight: number; confirmed: boolean; source: string }[];
   entries: { id: string; categoryId: string; title: string; pointsEarned: number | null; pointsPossible: number; source: string; updatedAt: string }[];
   grade: CurrentGrade;
 }
@@ -317,16 +319,20 @@ function CourseCard({ c }: { c: Course }) {
   const g = c.grade;
   return (
     <Card
-      title={<span className="row-sm">{c.name}{c.source !== 'manual' && <Badge tone="info" outline>Imported</Badge>}</span>}
+      title={<span className="row-sm">{c.name}{c.source !== 'manual' && <Badge tone="info" outline>{c.source === 'canvas' ? 'From Canvas' : 'Imported'}</Badge>}</span>}
       action={
         <div className="row-sm">
-          {g.percent !== null && <Badge tone={g.isEstimate ? 'warning' : 'accent'}>{g.percent.toFixed(1)}%{g.isEstimate ? ' · estimate' : ''}</Badge>}
+          {c.externalGrade !== null && <span title={c.externalGradeAt ? `Reported by Canvas, synced ${new Date(c.externalGradeAt).toLocaleString()}` : 'Reported by Canvas'}><Badge tone="info">Canvas {c.externalGrade.toFixed(1)}%</Badge></span>}
+          {g.percent !== null && <Badge tone={g.isEstimate ? 'warning' : 'accent'}>{c.externalGrade !== null ? 'Calculated ' : ''}{g.percent.toFixed(1)}%{g.isEstimate ? ' · estimate' : ''}</Badge>}
           <Button size="sm" variant="ghost" iconOnly icon={Trash2} aria-label={`Delete ${c.name}`} onClick={() => { if (confirm(`Delete ${c.name} and its grades?`)) delCourse.mutate(); }} />
         </div>
       }
     >
       <div className="stack">
         {g.caveats.length > 0 && <Callout tone="warning" title="Why this is an estimate">{g.caveats.map((x) => <div key={x}>{x}</div>)}</Callout>}
+        {c.externalGrade !== null && g.percent !== null && Math.abs(c.externalGrade - g.percent) >= 1 && (
+          <p className="xsmall subtle">Canvas’s grade can differ from Waypoint’s calculation (e.g. dropped lowest scores, missing-work rules or extra credit). Your teacher’s gradebook is the official record.</p>
+        )}
         <div className="stack-sm">
           <div className="eyebrow">Grading categories</div>
           {c.categories.length === 0 ? <p className="small muted">Add the categories and weights from your syllabus (e.g. Tests 50%).</p> : (
@@ -338,7 +344,7 @@ function CourseCard({ c }: { c: Course }) {
                     <span className="grow">{x.name}</span>
                     <span className="subtle num">{x.weight}%</span>
                     <span className="num" style={{ width: 64, textAlign: 'right' }}>{x.percent === null ? '—' : `${x.percent.toFixed(1)}%`}</span>
-                    {meta.confirmed ? <Badge tone="success">Confirmed</Badge> : <Badge>Unconfirmed</Badge>}
+                    {meta.source === 'canvas' ? <Badge tone="info">From Canvas</Badge> : meta.confirmed ? <Badge tone="success">Confirmed</Badge> : <Badge>Unconfirmed</Badge>}
                     <Button size="sm" variant="ghost" iconOnly icon={Trash2} aria-label={`Remove ${x.name}`} onClick={() => delCat.mutate(x.id)} />
                   </li>
                 );

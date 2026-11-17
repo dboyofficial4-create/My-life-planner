@@ -8,7 +8,7 @@ Requires Node.js **22.13+**, which provides the built-in `node:sqlite`, so there
 
 ```bash
 npm install
-npm run dev        # API on :8787, web on :5173 (proxied)
+npm run dev        # API on :8787, web on :5173 (proxied). The API doesn't auto-restart; use `npm run dev:api:watch` for that (not reliable on Windows)
 npm test           # domain + API tests
 npm run build && npm start   # production build served by the API server on :8787
 ```

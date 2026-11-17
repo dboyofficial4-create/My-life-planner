@@ -12,7 +12,8 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: { '/api': 'http://localhost:8787' },
+    // Keep the browser's Host header so the API's same-origin check sees the page's real address.
+    proxy: { '/api': { target: 'http://localhost:8787', changeOrigin: false } },
   },
   build: { outDir: 'dist/client', sourcemap: true },
 });

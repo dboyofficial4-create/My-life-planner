@@ -1,0 +1,22 @@
+# Render Blueprint: one web service with a persistent disk for the SQLite database.
+# Free instances can't attach a disk (data would be wiped on every restart), so this
+# uses the paid "starter" plan. See docs/DEPLOY.md.
+services:
+  - type: web
+    name: waypoint
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_PATH
+        value: /var/data/waypoint.db
+      # Optional: a server-wide key so every account can use AI study sets.
+      # Leave unset to let each person add their own key in Settings → Connections.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+    disk:
+      name: waypoint-data
+      mountPath: /var/data
+      sizeGB: 1

@@ -15,6 +15,8 @@ npm run build && npm start   # production build served by the API server on :878
 
 Open http://localhost:5173, then create an account or choose **Explore with demo data**. That creates a temporary, clearly labelled sample account, which is deleted after 24 hours.
 
+To put it online (so you can use it from your phone or school), see `docs/DEPLOY.md`.
+
 Copy `.env.example` to `.env` for configuration. No variables are required for local use.
 
 ## Stack

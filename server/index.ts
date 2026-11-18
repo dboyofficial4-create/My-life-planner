@@ -35,6 +35,9 @@ if (prod && existsSync('dist/client/index.html')) {
   const index = readFileSync('dist/client/index.html', 'utf8');
   app.use('/assets/*', serveStatic({ root: 'dist/client' }));
   for (const f of ['/favicon.svg', '/sw.js', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png']) app.use(f, serveStatic({ root: 'dist/client' }));
+  // the public welcome page (static, from public/start)
+  app.get('/start', (c) => c.redirect('/start/'));
+  app.use('/start/*', serveStatic({ root: 'dist/client', rewriteRequestPath: (p) => (p.endsWith('/') ? `${p}index.html` : p) }));
   app.get('*', (c) => c.html(index));
 }
 

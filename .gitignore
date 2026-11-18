@@ -8,3 +8,7 @@ data/.vapid-keys.json
 .env
 .env.local
 coverage
+# taste skill: browser profiles and screenshots from its checks (the deal history and waivers are kept)
+.taste-skill/chrome-*
+.taste-skill/shots/
+.taste-skill/gate/

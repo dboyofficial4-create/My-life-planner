@@ -1,0 +1,20 @@
+{
+ "palettes": [
+  "cool-white-slate"
+ ],
+ "types": [
+  "mona"
+ ],
+ "dealt": [
+  "mona",
+  "epilogue",
+  "gabarito"
+ ],
+ "moments": [
+  {
+   "id": "iris-opens",
+   "at": "2026-11-18T23:27:10.756Z",
+   "seed": "32aeff09"
+  }
+ ]
+}

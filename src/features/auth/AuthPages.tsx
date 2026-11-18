@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router';
-import { CalendarCheck2, Navigation, RefreshCcw, ShieldCheck, Sparkles } from 'lucide-react';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { CalendarCheck2, Navigation, RefreshCcw, ShieldCheck } from 'lucide-react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { api, errorMessage, fieldErrors } from '@/lib/api';
 import { Button, Callout, Field, Input } from '@/ui/primitives';
 
@@ -57,36 +57,17 @@ function useAfterAuth() {
   };
 }
 
+/** The public welcome page is a static page (public/start/), built with the taste skill. */
 export function WelcomePage() {
-  const after = useAfterAuth();
-  const demo = useMutation({ mutationFn: () => api.post('/auth/demo'), onSuccess: after });
+  useEffect(() => {
+    window.location.replace('/start/');
+  }, []);
   return (
-    <AuthLayout>
-      <div className="auth-card">
-        <div className="stack-sm">
-          <h1>Welcome to Waypoint</h1>
-          <p className="muted">Turn your goals, schedule and resources into a plan you can actually follow.</p>
-        </div>
-        <div className="stack-sm">
-          <Link to="/register" className="btn btn-primary btn-lg btn-block">
-            Create an account
-          </Link>
-          <Link to="/login" className="btn btn-secondary btn-lg btn-block">
-            Sign in
-          </Link>
-        </div>
-        <hr className="divider" />
-        <div className="stack-sm">
-          <Button variant="ghost" icon={Sparkles} loading={demo.isPending} onClick={() => demo.mutate()}>
-            Explore with demo data
-          </Button>
-          <p className="subtle xsmall" style={{ textAlign: 'center' }}>
-            Creates a temporary sample account (a high-school athlete) that’s deleted after 24 hours.
-          </p>
-          {demo.error && <Callout tone="danger">{errorMessage(demo.error)}</Callout>}
-        </div>
-      </div>
-    </AuthLayout>
+    <main className="auth-main">
+      <p className="muted">
+        Opening Waypoint… <a href="/start/">Continue</a>
+      </p>
+    </main>
   );
 }
 

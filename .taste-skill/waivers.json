@@ -1,0 +1,3 @@
+[
+  {"check": "button-styles", "target": "(one screen)", "reason": "\"Today 10\" and \"20 Nov\" are the sidebar row and a calendar day inside the drawn app window (role=img), not page buttons; the page has one primary and one secondary style."}
+]

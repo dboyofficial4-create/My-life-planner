@@ -119,7 +119,7 @@ function AssignmentsList({ d, onEdit, onAdd }: { d: SchoolData; onEdit: (a: Assi
   ].filter((g) => g.items.length);
   const done = d.assignments.filter((a) => a.status === 'done');
   const row = (a: Assignment) => (
-    <li key={a.id} className="list-row" style={{ alignItems: 'flex-start' }}>
+    <li key={a.id} className="list-row list-row--wrap" style={{ alignItems: 'flex-start' }}>
       <button className="check" style={{ marginTop: 2 }} data-checked={a.status === 'done'} aria-label={a.status === 'done' ? `Reopen ${a.title}` : `Mark ${a.title} done`} onClick={() => status.mutate({ id: a.id, s: a.status === 'done' ? 'open' : 'done' })}>
         <Check aria-hidden />
       </button>

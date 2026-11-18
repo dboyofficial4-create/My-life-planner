@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en" data-type="software" data-radius="round" data-ground="sky" data-buttons="pill" data-motion>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Waypoint: daily planner for student athletes</title>
+<meta name="description" content="Waypoint plans study, training, meals and sleep around your classes and practices, and reminds you before tests and due dates.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Waypoint: daily planner for student athletes">
+<meta property="og:description" content="Study, training and sleep planned around your classes and practices.">
+<meta property="og:image" content="share.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#f7f9fa">
+<!-- <link rel="canonical" href="https://[the client's domain]/start/"> : no public domain yet -->
+<meta name="site-kind" content="software">
+<meta name="page-type" content="software">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mona+Sans:wdth,wght@75..125,400..600&family=Geist+Mono:wght@400..500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/system.css">
+<link rel="stylesheet" href="assets/ui/cards.css">
+<link rel="stylesheet" href="assets/motion/motion.css">
+<link rel="stylesheet" href="assets/backgrounds/backgrounds.css">
+<link rel="stylesheet" href="assets/layout/layout.css">
+<link rel="stylesheet" href="assets/icons/icon.css">
+<style>
+:root {
+  --p-bg: #f7f9fa; --p-surface: #ecf0f2; --p-ink: #1f3038; --p-muted: #5d6b72;
+  --p-accent: #0d7480; --p-accent-ink: #ffffff; --p-action: #0d7480; --p-action-ink: #ffffff;
+  --p-inv-bg: #1f3038; --p-inv-surface: #2c3c44; --p-inv-ink: #f7f9fa; --p-inv-muted: #9ea7ab;
+  --p-inv-accent: #f7f9fa; --p-inv-accent-ink: #1f3038; --p-inv-action: #f7f9fa; --p-inv-action-ink: #1f3038;
+  --font-display: "Mona Sans", system-ui, sans-serif;
+  --font-text: "Mona Sans", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display-weight: 500;
+  --display-tracking: -0.03em;
+  --display-tracking-xl: -0.04em;
+  --display-stretch: 104%;
+  --ly-scale: 0.96;
+}
+</style>
+<link rel="stylesheet" href="assets/ui/base.css">
+<link rel="stylesheet" href="assets/ui/window/fragment.css">
+<link rel="stylesheet" href="assets/ui/calendar/fragment.css">
+<link rel="stylesheet" href="assets/ui/checklist/fragment.css">
+<link rel="stylesheet" href="assets/ui/notify/fragment.css">
+<link rel="stylesheet" href="assets/ui/files/fragment.css">
+<link rel="stylesheet" href="assets/ui/stat/fragment.css">
+<link rel="stylesheet" href="assets/moments/iris-opens/moment.css">
+<script>document.documentElement.classList.add('m-enter');setTimeout(()=>document.documentElement.classList.add('m-enter-done'),700)</script>
+<script src="assets/backgrounds/backgrounds.js"></script>
+<script>document.documentElement.classList.add('mo-js');setTimeout(()=>document.documentElement.classList.add('mo-safe'),2500)</script>
+<link rel="modulepreload" href="assets/moments/moments.js">
+<link rel="modulepreload" href="assets/moments/lib.js">
+<link rel="modulepreload" href="assets/moments/iris-opens/moment.js">
+<style>
+  /* app-frame (sections-library.md, app-frame: the whole recipe) */
+  .app.ui { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); margin-top: var(--s-7); background: var(--u-bg); border: 1px solid var(--u-border); border-radius: var(--u-r); box-shadow: var(--u-shadow); }
+  .app > .app__pane { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+  .app > .app__pane + .app__pane { border-left: 1px solid var(--u-line); }
+  .app > .app__pane > .ui-panel { width: 100%; border: 0; border-radius: 0; box-shadow: none; }
+  /* the open pane's month runs the pane's full width (the fragment stops at 440px on its own) */
+  .app > .app__pane > .ui-calendar { max-width: none; }
+  .app > .app__pane::after { content: ""; position: absolute; inset: auto 0 0 0; height: 64px; background: linear-gradient(transparent, var(--u-bg)); pointer-events: none; }
+  @media (min-width: 1024px) and (max-width: 1279px) { .app.ui { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); } }
+  @media (max-width: 1023px) {
+    .app.ui { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+    .app > .app__pane--list { max-height: 252px; }
+    .app > .app__pane--list::after { display: none; }
+    .app .ui-win__side { display: none; }
+    .app .ui-win__body { grid-template-columns: minmax(0, 1fr); }
+    .app > .app__pane + .app__pane { border-left: 0; border-top: 1px solid var(--u-line); }
+  }
+  @media (max-width: 639px) {
+    .app.ui { grid-template-rows: minmax(0, 1fr); }
+    .app > .app__pane--list { display: none; }
+    .app > .app__pane + .app__pane { border-top: 0; }
+  }
+  /* one --p-h for the steps group */
+  #school .panel { --p-h: 336px; }
+  @media (max-width: 639px) { #school .panel { --p-h: 296px; } #school { --hm: 2; } }
+  /* the drills frame runs the text's height, so the gap to the next section matches the page's */
+  @media (min-width: 1024px) { #training .frame--split { --ratio: 108%; } }
+  /* a phone keeps Sign in in the footer; the bar holds the logo and the menu */
+  @media (max-width: 639px) { .nav__actions > .nav__link { display: none; } }
+  /* the three steps stack (tablet) or go two-up (1024 to 1279): two screens there */
+  @media (min-width: 640px) and (max-width: 1279px) { #school { --h: 2; } }
+  /* on a phone the float card would sit on the plan it describes */
+  @media (max-width: 639px) { .hero__media > .ly-float { display: none; } }
+  /* the field ground's own minimum (88svh) would cut the section under one screen on a tablet */
+  #faq { --g-screen: 100svh; }
+</style>
+</head>
+<body>
+<!-- type: software (site-kind software)
+     deal: hero split, nav nav-centre, close close-type, footer footer-columns, rhythm dark-band, buttons pill,
+     mark stack, palette cool-white-slate (an off-white page and a teal accent, the paper and ink of a study desk),
+     type mona, radius round (a consumer app), lit ground sky, grounds hero bg-dots, faq bg-field,
+     effect grain-gradient in the one [data-visual] frame (#training)
+     moments: iris-opens on the dark band (#reminders) -->
+<header class="nav nav--centre">
+  <div class="wrap nav__bar">
+    <a class="skip-link" href="#top">Skip to content</a>
+    <a class="nav__logo" href="#top"><span class="mark" data-mark="stack" aria-hidden="true"></span>Waypoint</a>
+    <nav class="nav__links" aria-label="Main">
+      <div class="nav__item"><a class="nav__link" href="#plan">Plan</a></div>
+      <div class="nav__item"><a class="nav__link" href="#training">Training</a></div>
+      <div class="nav__item"><a class="nav__link" href="#school">School</a></div>
+      <div class="nav__item"><a class="nav__link" href="#reminders">Reminders</a></div>
+      <div class="nav__item"><a class="nav__link" href="#faq">Questions</a></div>
+    </nav>
+    <div class="nav__actions">
+      <a class="nav__link" href="/login">Sign in</a>
+      <a class="btn btn--primary" href="/register">Start your plan</a>
+    </div>
+    <button class="nav__toggle" type="button" aria-expanded="false" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero hero--split bg-dots" data-enter aria-labelledby="hero-h">
+    <div class="wrap"><div class="hero-text grid hero__grid">
+      <div class="hero__text span-5">
+        <p class="hero__kicker"><span class="dot" aria-hidden="true"></span>Test reminders start 3 days out</p>
+        <h1 id="hero-h">Daily planner for student athletes</h1>
+        <p class="hero__lead">Waypoint reads your class schedule, Canvas due dates and practice times, then fits study, training, meals and sleep into one day you can follow.</p>
+        <div class="btn-row">
+          <a class="btn btn--primary" href="/register">Start your plan<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a>
+          <button class="btn btn--secondary" type="button" data-demo>Try the demo</button>
+        </div>
+        <p class="t-small muted" data-demo-status role="status"></p>
+      </div>
+      <div class="hero__media span-6 start-7">
+        <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:420px;--ax:max(32px, 50% - 210px);--ay:56px;--ay-sm:24px">
+          <div class="ui ui-panel ui-checks" data-ui="checklist" role="img" aria-label="Today's plan in Waypoint: three of eight items done">
+            <div class="ui-checks__head">
+              <div class="ui-title">Wednesday, November 18</div>
+              <span class="ui-spacer"></span>
+              <div class="ui-meta" data-checks-count>3 of 8 done</div>
+            </div>
+            <div class="ui-checks__bar"><i data-checks-bar style="--k:0.375"></i></div>
+            <ul class="ui-checks__list">
+              <li class="ui-check is-done"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">6:50 Flashcards, unit 4 vocabulary</span></li>
+              <li class="ui-check is-done"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">7:45 School until 2:50</span></li>
+              <li class="ui-check is-done"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">3:05 Snack before practice</span></li>
+              <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">3:30 Basketball practice</span></li>
+              <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">6:15 Dinner</span></li>
+              <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">7:00 Chemistry review, 45 min</span></li>
+              <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">7:50 Shooting form drill, 20 min</span></li>
+              <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">10:30 Lights out</span></li>
+            </ul>
+          </div>
+        </div></div>
+        <div class="ly-float">
+          <div class="ly-float__row"><span class="ly-live">Due Friday</span><span>8:00</span></div>
+          <div class="ly-float__title">Chemistry test, unit 4</div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <section class="section" id="plan" aria-labelledby="plan-h">
+    <div class="wrap">
+      <div class="grid grid--top">
+        <h2 id="plan-h" class="span-5">One plan for school, practice and rest</h2>
+        <p class="span-6 start-7">Fixed hours go in first: classes, practices, games. Study blocks land before each due date, workouts fit around the team, and lights-out stays put.</p>
+      </div>
+      <div class="ui app fill" role="img" aria-label="Waypoint's week view: today's list of ten planned items beside the November calendar with a test and an essay marked" data-ui-pause-host>
+        <div class="app__pane app__pane--list">
+          <div class="ui ui-panel ui-win" data-ui="window" data-open="Next" data-work="Now" data-done="Done">
+            <div class="ui-win__bar">
+              <span class="ui-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="ui-win__crumb">Waypoint <i>/</i> <b>Today</b></span>
+              <span class="ui-spacer"></span>
+              <span class="ui-win__search" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg><span class="ui-win__ph">Search</span><span class="ui-kbd">/</span></span>
+            </div>
+            <div class="ui-win__body">
+              <nav class="ui-win__side" aria-hidden="true">
+                <span class="ui-win__nav is-on"><svg class="ui-icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 1.5"/></svg>Today<em>10</em></span>
+                <span class="ui-win__nav"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M3 4.5h10v9H3z"/><path d="M3 7h10M6 3v3M10 3v3"/></svg>Week</span>
+                <span class="ui-win__nav"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M2.5 4.5 8 2l5.5 2.5L8 7z"/><path d="M4.5 6v4c1 1 2.2 1.5 3.5 1.5s2.5-.5 3.5-1.5V6"/></svg>School<em>4</em></span>
+                <span class="ui-win__nav"><svg class="ui-icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M2.5 8h11M8 2.5c2 2 2 9 0 11M8 2.5c-2 2-2 9 0 11"/></svg>Training<em>2</em></span>
+                <span class="ui-win__nav"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M5 2.5v11M3.5 2.5v3a1.5 1.5 0 0 0 3 0v-3M11 13.5v-11c-1.5 1-2 3-2 5h2"/></svg>Food</span>
+                <span class="ui-win__label">Due soon</span>
+                <span class="ui-win__nav"><span class="ui-win__hash">#</span>Tests</span>
+                <span class="ui-win__nav"><span class="ui-win__hash">#</span>Essays</span>
+              </nav>
+              <div class="ui-win__main">
+                <div class="ui-win__cols" aria-hidden="true"><span>Time</span><span>Planned</span><span>Status</span><span>Length</span></div>
+                <ul class="ui-win__rows">
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="2">ST</span><span class="ui-win__who">6:50</span><span class="ui-win__sub">Flashcards · unit 4 vocabulary</span><span class="ui-win__st is-done" data-st>Done</span><span class="ui-win__age">15m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="4">SC</span><span class="ui-win__who">7:45</span><span class="ui-win__sub">School · fixed hours</span><span class="ui-win__st is-done" data-st>Done</span><span class="ui-win__age">7h</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="5">FD</span><span class="ui-win__who">3:05</span><span class="ui-win__sub">Snack before practice</span><span class="ui-win__st is-done" data-st>Done</span><span class="ui-win__age">10m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="1">TR</span><span class="ui-win__who">3:30</span><span class="ui-win__sub">Basketball practice · team</span><span class="ui-win__st" data-st>Next</span><span class="ui-win__age">2h</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="5">FD</span><span class="ui-win__who">6:15</span><span class="ui-win__sub">Dinner</span><span class="ui-win__st" data-st>Next</span><span class="ui-win__age">30m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="2">ST</span><span class="ui-win__who">7:00</span><span class="ui-win__sub">Chemistry review · test Friday</span><span class="ui-win__st is-you" data-st>Due soon</span><span class="ui-win__age">45m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="1">TR</span><span class="ui-win__who">7:50</span><span class="ui-win__sub">Shooting form drill</span><span class="ui-win__st" data-st>Next</span><span class="ui-win__age">20m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="2">ST</span><span class="ui-win__who">8:15</span><span class="ui-win__sub">History essay outline · due Tuesday</span><span class="ui-win__st" data-st>Next</span><span class="ui-win__age">40m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="3">CA</span><span class="ui-win__who">9:15</span><span class="ui-win__sub">Evening skin care</span><span class="ui-win__st" data-st>Next</span><span class="ui-win__age">10m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="4">SL</span><span class="ui-win__who">10:30</span><span class="ui-win__sub">Lights out · 8h 15m of sleep</span><span class="ui-win__st" data-st>Next</span><span class="ui-win__age">8h</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="app__pane app__pane--open">
+          <div class="ui ui-panel ui-calendar" data-ui="calendar" data-start="18" data-end="20" data-month="Nov">
+            <div class="ui-cal__head">
+              <div class="ui-cal__month">November <span>2026</span></div>
+              <span class="ui-spacer"></span>
+              <span class="ui-chip ui-chip--plain ui-chip--ink" data-cal-range>Nov 18 – 20</span>
+              <span class="ui-cal__nav" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M10 4 6 8l4 4"/></svg></span>
+              <span class="ui-cal__nav" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 16 16"><path d="m6 4 4 4-4 4"/></svg></span>
+            </div>
+            <div class="ui-cal__dow" aria-hidden="true"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
+            <div class="ui-cal__days">
+              <span class="ui-cal__d is-out"><b>26</b></span><span class="ui-cal__d is-out"><b>27</b></span><span class="ui-cal__d is-out"><b>28</b></span><span class="ui-cal__d is-out"><b>29</b></span><span class="ui-cal__d is-out"><b>30</b></span><span class="ui-cal__d is-out"><b>31</b></span><span class="ui-cal__d" data-d="1"><b>1</b></span>
+              <span class="ui-cal__d" data-d="2"><b>2</b></span><span class="ui-cal__d" data-d="3"><b>3</b></span><span class="ui-cal__d" data-d="4"><b>4</b></span><span class="ui-cal__d" data-d="5"><b>5</b></span><span class="ui-cal__d" data-d="6"><b>6</b></span><span class="ui-cal__d" data-d="7"><b>7</b></span><span class="ui-cal__d" data-d="8"><b>8</b></span>
+              <span class="ui-cal__d" data-d="9"><b>9</b></span><span class="ui-cal__d" data-d="10"><b>10</b></span><span class="ui-cal__d" data-d="11"><b>11</b></span><span class="ui-cal__d" data-d="12"><b>12</b></span><span class="ui-cal__d" data-d="13"><b>13</b></span><span class="ui-cal__d" data-d="14"><b>14</b></span><span class="ui-cal__d" data-d="15"><b>15</b></span>
+              <span class="ui-cal__d" data-d="16"><b>16</b></span><span class="ui-cal__d" data-d="17"><b>17</b></span><span class="ui-cal__d is-today is-start" data-d="18"><b>18</b></span><span class="ui-cal__d is-in" data-d="19"><b>19</b></span><span class="ui-cal__d is-end" data-d="20"><b>20</b></span><span class="ui-cal__d" data-d="21"><b>21</b></span><span class="ui-cal__d" data-d="22"><b>22</b></span>
+              <span class="ui-cal__d" data-d="23"><b>23</b></span><span class="ui-cal__d is-mark" data-d="24"><b>24</b></span><span class="ui-cal__d" data-d="25"><b>25</b></span><span class="ui-cal__d" data-d="26"><b>26</b></span><span class="ui-cal__d" data-d="27"><b>27</b></span><span class="ui-cal__d" data-d="28"><b>28</b></span><span class="ui-cal__d" data-d="29"><b>29</b></span>
+              <span class="ui-cal__d" data-d="30"><b>30</b></span><span class="ui-cal__d is-out"><b>1</b></span><span class="ui-cal__d is-out"><b>2</b></span><span class="ui-cal__d is-out"><b>3</b></span><span class="ui-cal__d is-out"><b>4</b></span><span class="ui-cal__d is-out"><b>5</b></span><span class="ui-cal__d is-out"><b>6</b></span>
+            </div>
+            <div class="ui-cal__events">
+              <div class="ui-cal__ev" data-ev="20">
+                <span class="ui-cal__date"><b>20</b><i>Nov</i></span>
+                <span class="ui-cal__evtext"><span class="ui-cal__evtitle">Chemistry test</span><span class="ui-cal__evsub">Review blocks Wednesday and Thursday</span></span>
+              </div>
+              <div class="ui-cal__ev" data-ev="21">
+                <span class="ui-cal__date"><b>21</b><i>Nov</i></span>
+                <span class="ui-cal__evtext"><span class="ui-cal__evtitle">Away game</span><span class="ui-cal__evsub">Bus leaves at 11:30</span></span>
+              </div>
+              <div class="ui-cal__ev" data-ev="24">
+                <span class="ui-cal__date"><b>24</b><i>Nov</i></span>
+                <span class="ui-cal__evtext"><span class="ui-cal__evtitle">History essay due</span><span class="ui-cal__evsub">Outline tonight, draft on Sunday</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="training" aria-labelledby="training-h">
+    <div class="wrap">
+      <div class="grid grid--top">
+        <div class="span-5 stack-5">
+          <h2 id="training-h">Practice plans from trusted coaches</h2>
+          <p class="t-lead">Pick your sport and the skills you want to fix. Waypoint lays out drills and videos for each one and fits them around team practice.</p>
+          <ul class="stack-3">
+            <li>Videos come only from governing bodies and established coaching channels.</li>
+            <li>Cut from the team? Tryout mode builds a plan up to the next tryout date.</li>
+          </ul>
+          <a class="link" href="/register">Set up your sport</a>
+        </div>
+        <div class="frame frame--split span-6 start-7" data-visual data-fx="grain-gradient" data-fx-seed="11" data-fx-params='{"grainMotion":0,"speed":0}'>
+          <div class="stage stage--fade-b"><div class="at-rise to-edge" style="--w:400px;--ax:max(32px, 50% - 200px);--ay:56px" data-ui-loop>
+            <div class="ui ui-panel ui-checks" data-ui="checklist" role="img" aria-label="A basketball shooting plan for week 2 with five drills, two done">
+              <div class="ui-checks__head">
+                <div class="ui-title">Shooting form, week 2</div>
+                <span class="ui-spacer"></span>
+                <div class="ui-meta" data-checks-count>2 of 5 drills</div>
+              </div>
+              <div class="ui-checks__bar"><i data-checks-bar style="--k:0.4"></i></div>
+              <ul class="ui-checks__list">
+                <li class="ui-check is-done"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">One-hand form shots, 3 x 10</span></li>
+                <li class="ui-check is-done"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Elbow under the ball, video check</span></li>
+                <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Free throws, 50 with a routine</span></li>
+                <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Catch and shoot from 5 spots</span></li>
+                <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Record makes in the tracker</span></li>
+              </ul>
+            </div>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="school" aria-labelledby="school-h">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="school-h">Study sets from your own notes in 3 steps</h2>
+      </div>
+      <div class="grid">
+        <article class="card card--row card--open span-4">
+          <span class="step-num">1</span>
+          <h3>Upload notes in 5 file types</h3>
+          <p>PDF, Word, PowerPoint, a photo of the board or plain text.</p>
+          <div class="panel">
+            <div class="stage stage--fade-b"><div class="at-corner" style="--ax:24px;--ay:40px">
+              <div class="ui ui-files" data-ui="files" data-reading="Reading {n} of {total}">
+                <div class="ui-files__status"><span class="ui-dot"></span><span data-files-status>4 files read</span></div>
+                <ul class="ui-files__grid">
+                  <li class="ui-file is-done"><span class="ui-file__icon"><svg class="ui-file__glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.25 2.75h8L18.75 7.25v14H6.25z"/><path d="M14 2.75v4.75h4.75M9 12.5h6.5M9 15.5h6.5M9 18.5h4"/></svg></span><span class="ui-file__name">Unit 4 notes.pdf</span><span class="ui-file__kind">PDF</span><span class="ui-file__bar"><i></i></span><span class="ui-file__check"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 8.2 2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></li>
+                  <li class="ui-file is-done"><span class="ui-file__icon"><svg class="ui-file__glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.25 2.75h8L18.75 7.25v14H6.25z"/><path d="M14 2.75v4.75h4.75M9 12.5h6.5M9 15.5h6.5M9 18.5h4"/></svg></span><span class="ui-file__name">Bonding slides.pptx</span><span class="ui-file__kind">PowerPoint</span><span class="ui-file__bar"><i></i></span><span class="ui-file__check"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 8.2 2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></li>
+                  <li class="ui-file is-done"><span class="ui-file__icon"><svg class="ui-file__glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.25 2.75h8L18.75 7.25v14H6.25z"/><path d="M14 2.75v4.75h4.75M9 12.5h6.5M9 15.5h6.5M9 18.5h4"/></svg></span><span class="ui-file__name">Lab write-up.docx</span><span class="ui-file__kind">Word</span><span class="ui-file__bar"><i></i></span><span class="ui-file__check"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 8.2 2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></li>
+                  <li class="ui-file is-done"><span class="ui-file__icon"><svg class="ui-file__glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5h17v13h-17z"/><path d="m3.5 15.5 5-4.5 4 3.5 3-2.5 5 4"/></svg></span><span class="ui-file__name">Whiteboard.jpg</span><span class="ui-file__kind">Photo</span><span class="ui-file__bar"><i></i></span><span class="ui-file__check"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 8.2 2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></li>
+                </ul>
+              </div>
+            </div></div>
+          </div>
+        </article>
+        <article class="card card--row card--open span-4">
+          <span class="step-num">2</span>
+          <h3>Review flashcards in Waypoint</h3>
+          <p>Cards come back on a schedule, so the hard ones show up more often.</p>
+          <div class="panel">
+            <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:300px;--ax:max(24px, 50% - 150px);--ay:40px">
+              <div class="ui ui-panel ui-checks" data-ui="checklist" role="img" aria-label="Flashcard review: 3 of 12 cards left">
+                <div class="ui-checks__head"><div class="ui-title">Unit 4 cards</div><span class="ui-spacer"></span><div class="ui-meta" data-checks-count>9 of 12</div></div>
+                <div class="ui-checks__bar"><i data-checks-bar style="--k:0.75"></i></div>
+                <ul class="ui-checks__list">
+                  <li class="ui-check is-done"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Ionic bond</span></li>
+                  <li class="ui-check is-done"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Electronegativity</span></li>
+                  <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Lewis structure</span></li>
+                  <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Polar covalent bond</span></li>
+                </ul>
+              </div>
+            </div></div>
+          </div>
+        </article>
+        <article class="card card--row card--open span-4">
+          <span class="step-num">3</span>
+          <h3>Take practice tests in Waypoint</h3>
+          <p>Questions written from your notes, scored by topic.</p>
+          <div class="panel">
+            <div class="stage stage--fade-b"><div class="at-corner" style="--ax:24px;--ay:40px">
+              <div class="ui ui-panel ui-stat" data-ui="stat" data-from="64" data-to="82" data-suffix="%" role="img" aria-label="Practice test scores rising from 64 to 82 percent">
+                <div class="ui-stat__head">
+                  <div class="ui-stat__top"><span class="ui-stat__label">Practice test score</span><span class="ui-stat__range">Unit 4</span></div>
+                  <div class="ui-stat__line">
+                    <span class="ui-stat__num" data-stat-num>82%</span>
+                    <span class="ui-chip ui-chip--plain ui-stat__delta"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 9.5v-7M3 5.5l3-3 3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>18 pts</span>
+                    <span class="ui-stat__sub">since the first try</span>
+                  </div>
+                </div>
+                <div class="ui-stat__chart">
+                  <svg class="ui-stat__svg" viewBox="0 0 400 120" preserveAspectRatio="none" aria-hidden="true">
+                    <path class="ui-stat__grid" d="M0 30.5H400M0 60.5H400M0 90.5H400"/>
+                    <path class="ui-stat__cover" fill-rule="evenodd" d=""/>
+                    <g class="ui-stat__bars"><rect rx="3" x="0" y="43" width="60" height="77"/><rect rx="3" x="85" y="38" width="60" height="82"/><rect rx="3" x="170" y="31" width="60" height="89"/><rect rx="3" x="255" y="26" width="60" height="94"/><rect rx="3" x="340" y="21" width="60" height="99"/></g>
+                  </svg>
+                  <div class="ui-stat__axis" aria-hidden="true"><span>Try 1</span><span>Try 3</span><span>Try 5</span></div>
+                </div>
+              </div>
+            </div></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section ground-inverse" id="reminders" data-moment="iris-opens" data-moment-opts='{"from": "base"}' aria-labelledby="reminders-h">
+    <div class="wrap">
+      <div class="grid grid--top">
+        <div class="span-5 stack-5">
+          <h2 id="reminders-h">Waypoint reminders on your phone and laptop</h2>
+          <p class="t-lead">A test gets a note three days out, the evening before and that morning. Practice and study blocks get one ten minutes before they start.</p>
+          <ul class="stack-3">
+            <li>Nothing arrives during your sleep hours.</li>
+            <li>Works in Chrome, Edge and Firefox, and on iPhone from the Home Screen.</li>
+          </ul>
+        </div>
+        <div class="frame frame--split span-6 start-7">
+          <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:380px;--ax:max(32px, 50% - 190px);--ay:56px">
+            <div class="ui ui-notify" data-ui="notify" role="img" aria-label="Three Waypoint reminders: a test in three days, practice in ten minutes, flashcards due">
+              <ul class="ui-notify__list" data-notify-list>
+                <li class="ui-note"><span class="ui-note__ico"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M4 6.5a4 4 0 0 1 8 0c0 3 1.5 4 1.5 4h-11S4 9.5 4 6.5"/><path d="M6.5 12.5a1.5 1.5 0 0 0 3 0"/></svg></span><span class="ui-note__text"><span class="ui-note__title">Test in 3 days: Chemistry<time>now</time></span><span class="ui-note__body">Unit 4 on Friday. Review blocks are planned.</span></span></li>
+                <li class="ui-note"><span class="ui-note__ico"><svg class="ui-icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 1.5"/></svg></span><span class="ui-note__text"><span class="ui-note__title">In 10 min: Basketball practice<time>3:20</time></span><span class="ui-note__body">3:30 to 5:30, main gym</span></span></li>
+                <li class="ui-note"><span class="ui-note__ico"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M3 4.5h10v8H3z"/><path d="M5.5 2.5h7v2"/></svg></span><span class="ui-note__text"><span class="ui-note__title">12 flashcards due today<time>5:00</time></span><span class="ui-note__body">Unit 4 vocabulary</span></span></li>
+              </ul>
+            </div>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section bg-field" id="faq" aria-labelledby="faq-h">
+    <div class="wrap">
+      <div class="grid grid--top">
+        <div class="span-5 stack-5">
+          <h2 id="faq-h">Questions</h2>
+          <p>What students ask before they sign up.</p>
+          <a class="link" href="/register">Start your plan</a>
+        </div>
+        <div class="faq span-6 start-7">
+          <div class="faq__item"><h3>Can Waypoint connect to my school?</h3><p>Yes, if your school uses Canvas and lets students make an access token. Any calendar file (.ics) works too.</p></div>
+          <div class="faq__item"><h3>Does Waypoint read Home Access Center?</h3><p>No. HAC has no public way to share grades, so you type them in.</p></div>
+          <div class="faq__item"><h3>Who can see my plan?</h3><p>Only you. You can download everything or delete your account in Settings.</p></div>
+          <div class="faq__item"><h3>Is Waypoint for younger students?</h3><p>Sign-up is for ages 13 and up.</p></div>
+          <div class="faq__item"><h3>How long does the Waypoint demo last?</h3><p>24 hours. It opens a made-up student's week, then it is deleted.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer closing" id="contact" aria-labelledby="close-h">
+  <div class="wrap">
+    <div class="closing__cta close--type">
+      <div class="section-head">
+        <h2 id="close-h">Plan tomorrow before tonight's practice</h2>
+        <p>Answer a few questions about your classes, sport and sleep. The first plan is ready right after.</p>
+      </div>
+      <a class="btn btn--primary btn--xl btn--wide" href="/register">Start your plan<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a>
+    </div>
+    <div class="closing__links">
+      <div class="grid">
+        <div class="span-4 stack-4">
+          <a class="nav__logo" href="#top"><span class="mark" data-mark="stack" aria-hidden="true"></span>Waypoint</a>
+          <p class="footer__lede">A day plan for school and sport.</p>
+        </div>
+        <div class="span-2 footer__col"><h3>Plan</h3><ul><li><a href="#plan">Today</a></li><li><a href="/login">Sign in</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>Training</h3><ul><li><a href="#training">Drills</a></li><li><a href="#training">Tryouts</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>School</h3><ul><li><a href="#school">Study sets</a></li><li><a href="#reminders">Reminders</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>Questions</h3><ul><li><a href="#faq">Common questions</a></li></ul></div>
+      </div>
+      <div class="footer__legal">
+        <span>&copy; 2026 Waypoint</span>
+        <div class="socials"></div>
+        <span class="t-small muted">General guidance only, not medical, nutrition or legal advice.</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<nav class="actionbar" aria-label="Quick actions">
+  <a class="btn btn--primary" href="/register">Start your plan</a>
+</nav>
+
+<script type="module" src="assets/system.js"></script>
+<script type="module" src="assets/layout/layout.js"></script>
+<script>
+  // "Try the demo": the app's own demo sign-in (POST /api/auth/demo), then into the app.
+  document.querySelectorAll('[data-demo]').forEach((b) => b.addEventListener('click', async () => {
+    const status = document.querySelector('[data-demo-status]');
+    b.disabled = true;
+    status.textContent = 'Setting up the demo';
+    try {
+      const r = await fetch('/api/auth/demo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}', credentials: 'same-origin' });
+      if (!r.ok) throw new Error(String(r.status));
+      location.href = '/';
+    } catch {
+      status.textContent = 'The demo could not start. Is Waypoint running? Try again in a moment.';
+      b.disabled = false;
+    }
+  }));
+</script>
+</body>
+</html>

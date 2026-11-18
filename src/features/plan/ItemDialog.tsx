@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, Clock, Lock, LockOpen, MoveRight, RotateCcw, SkipForward } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router';
 import type { ItemUpdateInput } from '@shared/schemas';
 import { minToHhmm } from '@shared/domain/time';
 import { api, errorMessage } from '@/lib/api';
@@ -136,6 +137,13 @@ export function ItemDialog({ item, onClose, clock, weekDates }: { item: Item | n
                 <ol className="small" style={{ paddingLeft: 18 }}>
                   {(item.meta!.steps as string[]).map((s) => <li key={s}>{s}</li>)}
                 </ol>
+              </div>
+            )}
+            {item.category === 'study' && (typeof item.meta?.assignmentId === 'string' || item.meta?.review) && (
+              <div>
+                <Link className="btn btn-secondary btn-sm" to={item.meta?.review ? '/school/review' : `/school/study?assignmentId=${item.meta!.assignmentId as string}`} onClick={close}>
+                  {item.meta?.review ? 'Start flashcard review' : 'Open study guide'}
+                </Link>
               </div>
             )}
             {item.effort !== null && (

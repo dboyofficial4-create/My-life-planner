@@ -9,6 +9,7 @@ import { splitIntoSteps } from '../../shared/domain/school/study';
 import { guessAssignmentType, isScheduleNote, parseIcs } from '../../shared/domain/school/ics';
 import { startOfWeek } from '../../shared/domain/time';
 import { loadContext } from '../services/context';
+import { studyRoutes } from './study';
 
 export const schoolRoutes = new Hono<AppEnv>();
 
@@ -17,6 +18,8 @@ schoolRoutes.use('*', async (c, next) => {
   if (!ctx.modules.has('school')) throw new HttpError(404, 'module_disabled', 'School is turned off. You can enable it in Settings.');
   await next();
 });
+
+schoolRoutes.route('/study', studyRoutes);
 
 const stale = (c: { var: AppEnv['Variables'] }) => {
   const ctx = loadContext(c.var.store, c.var.now());

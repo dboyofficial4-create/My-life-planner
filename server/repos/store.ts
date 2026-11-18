@@ -604,6 +604,120 @@ export class UserStore {
     this.db.run('DELETE FROM courses WHERE user_id = ? AND source = ?', this.userId, source);
   }
 
+  /* ---------- study materials, topics, flashcards ---------- */
+
+  /** Resolve a study scope, checking the user owns it. For an assignment, its course is included. */
+  studyScope(scope: { courseId?: string | null; assignmentId?: string | null }): { courseId: string | null; assignmentId: string | null } | null {
+    if (scope.assignmentId) {
+      const a = this.db.get<{ course_id: string | null }>('SELECT course_id FROM assignments WHERE id = ? AND user_id = ?', scope.assignmentId, this.userId);
+      return a ? { courseId: a.course_id, assignmentId: scope.assignmentId } : null;
+    }
+    if (scope.courseId) return this.db.get('SELECT 1 FROM courses WHERE id = ? AND user_id = ?', scope.courseId, this.userId) ? { courseId: scope.courseId, assignmentId: null } : null;
+    return { courseId: null, assignmentId: null };
+  }
+
+  /** Materials for an assignment include course-wide ones; for a course, everything in the course. */
+  private scopeWhere(scope: { courseId: string | null; assignmentId: string | null }): [string, (string | null)[]] {
+    if (scope.assignmentId) return ['user_id = ? AND (assignment_id = ? OR (assignment_id IS NULL AND course_id IS ?))', [this.userId, scope.assignmentId, scope.courseId]];
+    if (scope.courseId) return ['user_id = ? AND course_id = ?', [this.userId, scope.courseId]];
+    return ['user_id = ?', [this.userId]];
+  }
+
+  materials(scope: { courseId: string | null; assignmentId: string | null }) {
+    const [where, args] = this.scopeWhere(scope);
+    return this.db
+      .all<{ id: string; course_id: string | null; assignment_id: string | null; kind: 'notes' | 'link'; title: string; body: string; url: string | null; updated_at: string }>(`SELECT * FROM study_materials WHERE ${where} ORDER BY updated_at DESC`, ...args)
+      .map((r) => ({ id: r.id, courseId: r.course_id, assignmentId: r.assignment_id, kind: r.kind, title: r.title, body: r.body, url: r.url, updatedAt: r.updated_at }));
+  }
+
+  createMaterial(scope: { courseId: string | null; assignmentId: string | null }, m: { kind: 'notes' | 'link'; title: string; body: string; url: string | null }): string {
+    const id = uid();
+    const t = now();
+    this.db.run('INSERT INTO study_materials (id, user_id, course_id, assignment_id, kind, title, body, url, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', id, this.userId, scope.courseId, scope.assignmentId, m.kind, m.title, m.body, m.url, t, t);
+    return id;
+  }
+
+  updateMaterial(id: string, m: { title: string; body: string; url: string | null }): boolean {
+    return this.db.run('UPDATE study_materials SET title = ?, body = ?, url = ?, updated_at = ? WHERE id = ? AND user_id = ?', m.title, m.body, m.url, now(), id, this.userId).changes > 0;
+  }
+
+  deleteMaterial(id: string): boolean {
+    return this.db.run('DELETE FROM study_materials WHERE id = ? AND user_id = ?', id, this.userId).changes > 0;
+  }
+
+  topics(scope: { courseId: string | null; assignmentId: string | null }) {
+    const where = scope.assignmentId ? 'user_id = ? AND assignment_id = ?' : 'user_id = ? AND course_id = ? AND assignment_id IS NULL';
+    return this.db
+      .all<{ id: string; title: string; confidence: number }>(`SELECT id, title, confidence FROM study_topics WHERE ${where} ORDER BY position, updated_at`, this.userId, scope.assignmentId ?? scope.courseId)
+      .map((r) => ({ id: r.id, title: r.title, confidence: r.confidence }));
+  }
+
+  createTopics(scope: { courseId: string | null; assignmentId: string | null }, titles: string[]): number {
+    const existing = new Set(this.topics(scope).map((t) => t.title.toLowerCase()));
+    let n = this.topics(scope).length;
+    let created = 0;
+    for (const title of titles) {
+      if (existing.has(title.toLowerCase())) continue;
+      existing.add(title.toLowerCase());
+      this.db.run('INSERT INTO study_topics (id, user_id, course_id, assignment_id, title, confidence, position, updated_at) VALUES (?, ?, ?, ?, ?, 0, ?, ?)', uid(), this.userId, scope.courseId, scope.assignmentId, title, n++, now());
+      created++;
+    }
+    return created;
+  }
+
+  setTopicConfidence(id: string, confidence: number): boolean {
+    return this.db.run('UPDATE study_topics SET confidence = ?, updated_at = ? WHERE id = ? AND user_id = ?', confidence, now(), id, this.userId).changes > 0;
+  }
+
+  deleteTopic(id: string): boolean {
+    return this.db.run('DELETE FROM study_topics WHERE id = ? AND user_id = ?', id, this.userId).changes > 0;
+  }
+
+  cards(scope: { courseId: string | null; assignmentId: string | null }) {
+    const [where, args] = this.scopeWhere(scope);
+    return this.db
+      .all<{ id: string; course_id: string | null; assignment_id: string | null; front: string; back: string; box: number; due_date: string; last_reviewed: string | null; correct: number; wrong: number }>(`SELECT * FROM flashcards WHERE ${where} ORDER BY due_date, created_at`, ...args)
+      .map((r) => ({ id: r.id, courseId: r.course_id, assignmentId: r.assignment_id, front: r.front, back: r.back, box: r.box, dueDate: r.due_date, lastReviewed: r.last_reviewed, correct: r.correct, wrong: r.wrong }));
+  }
+
+  createCards(scope: { courseId: string | null; assignmentId: string | null }, cards: { front: string; back: string }[], today: string): number {
+    const existing = new Set(this.cards(scope).map((c) => c.front.toLowerCase()));
+    let n = 0;
+    for (const c of cards) {
+      if (existing.has(c.front.toLowerCase())) continue;
+      existing.add(c.front.toLowerCase());
+      this.db.run('INSERT INTO flashcards (id, user_id, course_id, assignment_id, front, back, box, due_date, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)', uid(), this.userId, scope.courseId, scope.assignmentId, c.front, c.back, today, now());
+      n++;
+    }
+    return n;
+  }
+
+  card(id: string) {
+    return this.db.get<{ id: string; box: number }>('SELECT id, box FROM flashcards WHERE id = ? AND user_id = ?', id, this.userId);
+  }
+
+  recordReview(id: string, r: { box: number; due: string; correct: boolean }): boolean {
+    return (
+      this.db.run(
+        `UPDATE flashcards SET box = ?, due_date = ?, last_reviewed = ?, correct = correct + ?, wrong = wrong + ? WHERE id = ? AND user_id = ?`,
+        r.box, r.due, now(), r.correct ? 1 : 0, r.correct ? 0 : 1, id, this.userId,
+      ).changes > 0
+    );
+  }
+
+  updateCard(id: string, c: { front: string; back: string }): boolean {
+    return this.db.run('UPDATE flashcards SET front = ?, back = ? WHERE id = ? AND user_id = ?', c.front, c.back, id, this.userId).changes > 0;
+  }
+
+  deleteCard(id: string): boolean {
+    return this.db.run('DELETE FROM flashcards WHERE id = ? AND user_id = ?', id, this.userId).changes > 0;
+  }
+
+  /** Number of cards due on or before a date (for planning review sessions). */
+  cardsDueBy(date: string): number {
+    return this.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM flashcards WHERE user_id = ? AND due_date <= ?', this.userId, date)!.n;
+  }
+
   /* ---------- sports ---------- */
 
   addSkillTest(t: { sport: string; testId: string; date: string; value: number; note: string }): string {
@@ -680,6 +794,9 @@ export class UserStore {
       integrations: t('integrations', 'provider, status, last_sync_at, last_error'),
       progressLogs: t('progress_logs'),
       skillTests: t('skill_tests'),
+      studyMaterials: t('study_materials'),
+      studyTopics: t('study_topics'),
+      flashcards: t('flashcards'),
     };
   }
 }

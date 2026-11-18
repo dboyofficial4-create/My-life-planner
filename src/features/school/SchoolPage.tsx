@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BookOpen, Calculator, Check, FileUp, GraduationCap, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import { useState, type ChangeEvent } from 'react';
+import { Link } from 'react-router';
 import { clsx } from 'clsx';
 import { ASSIGNMENT_TYPES, AssignmentInput, type AssignmentInput as AssignmentForm } from '@shared/schemas';
 import type { CurrentGrade, NeededResult } from '@shared/domain/school/grades';
@@ -45,7 +46,7 @@ interface SchoolData {
   assignments: Assignment[];
 }
 
-type Tab = 'assignments' | 'courses' | 'connections';
+type Tab = 'assignments' | 'study' | 'courses' | 'connections';
 
 function SourceTag({ source }: { source: string }) {
   if (source.startsWith('import')) return <Badge tone="info" outline>Imported</Badge>;
@@ -75,8 +76,9 @@ export default function SchoolPage() {
           </>
         }
       />
-      <Tabs label="School sections" value={tab} onChange={setTab} tabs={[{ value: 'assignments', label: 'Assignments' }, { value: 'courses', label: 'Courses & grades' }, { value: 'connections', label: 'Connections' }]} />
+      <Tabs label="School sections" value={tab} onChange={setTab} tabs={[{ value: 'assignments', label: 'Assignments' }, { value: 'study', label: 'Study' }, { value: 'courses', label: 'Courses & grades' }, { value: 'connections', label: 'Connections' }]} />
       {tab === 'assignments' && <AssignmentsList d={d} onEdit={(a) => setEditing({ id: a.id, value: { courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, estimatedMinutes: a.estimatedMinutes, notes: a.notes } })} onAdd={newAssignment} />}
+      {tab === 'study' && <StudyOverview d={d} />}
       {tab === 'courses' && <Courses d={d} />}
       {tab === 'connections' && <IntegrationsList module="school" />}
       <AssignmentDialog editing={editing} courses={d.courses} onClose={() => setEditing(null)} />
@@ -133,6 +135,7 @@ function AssignmentsList({ d, onEdit, onAdd }: { d: SchoolData; onEdit: (a: Assi
         )}
       </div>
       <Badge tone={a.status === 'open' && a.dueDate < d.today ? 'danger' : a.dueDate === d.today ? 'warning' : 'neutral'}>{relativeDay(a.dueDate, d.today)}</Badge>
+      {a.status === 'open' && <Link className="btn btn-secondary btn-sm" to={`/school/study?assignmentId=${a.id}`}>Study guide</Link>}
       <Button size="sm" variant="ghost" iconOnly icon={Pencil} aria-label={`Edit ${a.title}`} onClick={() => onEdit(a)} />
       <Button size="sm" variant="ghost" iconOnly icon={Trash2} aria-label={`Delete ${a.title}`} onClick={() => { if (confirm(`Delete “${a.title}”?`)) del.mutate(a.id); }} />
     </li>
@@ -327,6 +330,7 @@ function CourseCard({ c }: { c: Course }) {
         <div className="row-sm">
           {c.externalGrade !== null && <span title={c.externalGradeAt ? `Reported by Canvas, synced ${new Date(c.externalGradeAt).toLocaleString()}` : 'Reported by Canvas'}><Badge tone="info">Canvas {c.externalGrade.toFixed(1)}%</Badge></span>}
           {g.percent !== null && <Badge tone={g.isEstimate ? 'warning' : 'accent'}>{c.externalGrade !== null ? 'Calculated ' : ''}{g.percent.toFixed(1)}%{g.isEstimate ? ' · estimate' : ''}</Badge>}
+          <Link className="btn btn-ghost btn-sm" to={`/school/study?courseId=${c.id}`}>Study materials</Link>
           <Button size="sm" variant="ghost" iconOnly icon={Trash2} aria-label={`Delete ${c.name}`} onClick={() => { if (confirm(`Delete ${c.name} and its grades?`)) delCourse.mutate(); }} />
         </div>
       }
@@ -435,5 +439,61 @@ function GradeCalculator({ c, onClose }: { c: Course; onClose: () => void }) {
         )}
       </div>
     </Dialog>
+  );
+}
+
+/* ---------- study overview ---------- */
+
+function StudyOverview({ d }: { d: SchoolData }) {
+  const q = useQuery({ queryKey: ['study-overview'], queryFn: () => api.get<{ totalDue: number; totalCards: number; courses: { id: string; name: string; materials: number; cards: number; due: number }[] }>('/school/study/overview') });
+  const upcoming = d.assignments.filter((a) => a.status === 'open' && a.dueDate >= d.today && ['test', 'exam', 'quiz', 'essay', 'project'].includes(a.type)).slice(0, 6);
+  return (
+    <div className="stack-lg">
+      <Card>
+        <div className="row-wrap between">
+          <div className="stack-sm" style={{ gap: 2 }}>
+            <h2>Flashcards</h2>
+            <p className="small muted">{q.data ? (q.data.totalCards ? `${q.data.totalDue} due today across ${q.data.totalCards} cards.` : 'No cards yet — add them from any study guide.') : 'Loading…'}</p>
+          </div>
+          {!!q.data?.totalDue && <Link className="btn btn-primary" to="/school/review">Review all due cards</Link>}
+        </div>
+      </Card>
+      <Card title="Study guides for what’s coming up" pad={false}>
+        {upcoming.length === 0 ? (
+          <p className="card-body small muted">No upcoming tests, essays or projects. Add one in Assignments to get a study guide.</p>
+        ) : (
+          <ul style={{ listStyle: 'none' }}>
+            {upcoming.map((a) => (
+              <li key={a.id} className="list-row">
+                <div className="grow">
+                  <div className="small strong truncate">{a.title}</div>
+                  <div className="xsmall subtle">{a.courseName ?? 'No course'} · {a.type}</div>
+                </div>
+                <Badge>{relativeDay(a.dueDate, d.today)}</Badge>
+                <Link className="btn btn-secondary btn-sm" to={`/school/study?assignmentId=${a.id}`}>Open guide</Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+      <Card title="Course materials" pad={false}>
+        {!q.data ? <p className="card-body small muted">Loading…</p> : q.data.courses.length === 0 ? (
+          <p className="card-body small muted">Add a course to keep notes, links and flashcards for it.</p>
+        ) : (
+          <ul style={{ listStyle: 'none' }}>
+            {q.data.courses.map((co) => (
+              <li key={co.id} className="list-row">
+                <div className="grow">
+                  <div className="small strong">{co.name}</div>
+                  <div className="xsmall subtle">{co.materials} note{co.materials === 1 ? '' : 's'}/link{co.materials === 1 ? '' : 's'} · {co.cards} card{co.cards === 1 ? '' : 's'}{co.due ? ` · ${co.due} due` : ''}</div>
+                </div>
+                {co.due > 0 && <Link className="btn btn-ghost btn-sm" to={`/school/review?courseId=${co.id}`}>Review</Link>}
+                <Link className="btn btn-secondary btn-sm" to={`/school/study?courseId=${co.id}`}>Open</Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </div>
   );
 }

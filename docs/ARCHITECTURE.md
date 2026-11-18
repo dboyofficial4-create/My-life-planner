@@ -34,3 +34,13 @@ All schedules, conflicts, unit conversions, grocery totals, grade math and age r
 2. Put pure logic in `shared/domain/<module>/` with tests.
 3. Emit `ActivityRequest`s from `build.ts` if it needs time in the plan.
 4. Add routes (gated on the module being enabled) and a feature folder in `src/features/`. Reuse form components in `src/features/forms` for both onboarding and Settings.
+
+## Study guides
+
+`shared/domain/school/studyguide.ts` holds:
+* the evidence-based study methods (ratings follow Dunlosky et al., 2013, with sources linked in the UI);
+* conversion of the student's notes into flashcards ("term: definition", "term - definition", "Q:/A:" pairs) and topics (`# headings`);
+* Leitner-box spaced repetition (1/2/4/7/14 days);
+* `nextSteps`, which builds recommendations from the student's own topics, cards and deadlines.
+
+Waypoint never writes subject content for the student; it organises their material and tells them how to study it. Materials, topics and cards are stored per course or assignment (`study_materials`, `study_topics`, `flashcards`) and deleted with them. When cards come due, the planner adds short "Flashcard review" sessions.

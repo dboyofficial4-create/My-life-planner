@@ -21,6 +21,8 @@ export interface BuildContext {
   program?: Program | null;
   meals?: MealEntry[];
   assignments?: AssignmentLike[];
+  /** Flashcards due by the end of the plan (for short review sessions). */
+  cardsDue?: number;
   skin?: Routine | null;
   hair?: Routine | null;
   /** User-locked items carried over from the current plan. */
@@ -230,6 +232,21 @@ export function buildPlanInput(ctx: BuildContext): BuildResult {
     const window = prefWindow(sched.preferredStudyTime, awake[dates[0]!]!, 'study');
     const fromAssignments = studyRequests(ctx.assignments ?? [], { today: ctx.today, horizon: dates, window });
     requests.push(...fromAssignments);
+    const due = ctx.cardsDue ?? 0;
+    if (due > 0) {
+      requests.push({
+        key: 'study:cards',
+        title: 'Flashcard review',
+        category: 'study',
+        idealMinutes: 15,
+        minMinutes: 10,
+        count: Math.min(5, Math.max(2, Math.ceil(due / 25))),
+        priority: rank('school') + 1,
+        window,
+        explain: `${due} flashcard${due === 1 ? '' : 's'} come due this week. Short, spaced reviews beat one long cram.`,
+        meta: { review: true },
+      });
+    }
     const target = settings.school?.dailyStudyMinutes ?? 0;
     if (target > 0) {
       const schoolDays = dates.filter((d) => !isWeekend(d));

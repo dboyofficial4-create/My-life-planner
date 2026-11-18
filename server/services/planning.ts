@@ -50,6 +50,7 @@ function compute(store: UserStore, weekStart: LocalDate, now: Date) {
     program: ctx.program,
     meals,
     assignments: ctx.modules.has('school') ? assignmentsForPlanning(store) : [],
+    cardsDue: ctx.modules.has('school') ? store.cardsDueBy(week.end) : 0,
     skin: ctx.skin,
     hair: ctx.hair,
   });

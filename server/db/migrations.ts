@@ -248,4 +248,48 @@ CREATE TABLE video_cache (
 );
 `,
   },
+  {
+    id: 4,
+    name: 'study_materials',
+    sql: `
+CREATE TABLE study_materials (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  course_id TEXT REFERENCES courses(id) ON DELETE CASCADE,
+  assignment_id TEXT REFERENCES assignments(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL DEFAULT '',
+  url TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX study_materials_user ON study_materials(user_id, course_id, assignment_id);
+CREATE TABLE study_topics (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  course_id TEXT REFERENCES courses(id) ON DELETE CASCADE,
+  assignment_id TEXT REFERENCES assignments(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  confidence INTEGER NOT NULL DEFAULT 0,
+  position INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE flashcards (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  course_id TEXT REFERENCES courses(id) ON DELETE CASCADE,
+  assignment_id TEXT REFERENCES assignments(id) ON DELETE CASCADE,
+  front TEXT NOT NULL,
+  back TEXT NOT NULL,
+  box INTEGER NOT NULL DEFAULT 1,
+  due_date TEXT NOT NULL,
+  last_reviewed TEXT,
+  correct INTEGER NOT NULL DEFAULT 0,
+  wrong INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX flashcards_user_due ON flashcards(user_id, due_date);
+`,
+  },
 ];

@@ -30,6 +30,12 @@ export function relativeDay(date: string, today: string): string {
   return formatLocalDate(date, { month: 'short', day: 'numeric' });
 }
 
+/** relativeDay for use mid-sentence: "today"/"tomorrow" lowercased, weekday and month names kept capitalised. */
+export function relativeDayInline(date: string, today: string): string {
+  const r = relativeDay(date, today);
+  return ['Today', 'Tomorrow', 'Yesterday'].includes(r) ? r.toLowerCase() : r;
+}
+
 export const pluralize = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 export function greeting(minute: number) {

@@ -12,3 +12,4 @@ coverage
 .taste-skill/chrome-*
 .taste-skill/shots/
 .taste-skill/gate/
+.taste-skill/gate.json

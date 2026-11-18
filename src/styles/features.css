@@ -105,3 +105,11 @@
   .settings-nav .nav { flex-direction: row; overflow-x: auto; scrollbar-width: none; }
   .settings-nav .nav a { white-space: nowrap; }
 }
+
+/* ---------- sports videos ---------- */
+.video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--s-3); }
+.video-card { display: flex; flex-direction: column; gap: 4px; color: var(--text); text-decoration: none; }
+.video-card:hover { text-decoration: none; }
+.video-card:hover .video-title { color: var(--accent-text); }
+.video-card img, .video-thumb-empty { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--radius); background: var(--surface-2); }
+.video-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

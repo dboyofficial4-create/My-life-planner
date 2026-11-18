@@ -7,6 +7,7 @@ import {
 } from '@shared/schemas';
 import { WEEK_ORDER, WEEKDAY_SHORT } from '@shared/domain/time';
 import { SPORT_LABELS } from '@shared/domain/fitness/sports';
+import { SPORTS_CATALOG } from '@shared/domain/sports/catalog';
 import { cmToFeetInches, feetInchesToCm, kgToLb, lbToKg } from '@shared/domain/nutrition/units';
 import type { AgePolicy } from '@shared/domain/age';
 import { Button, Chips, Field, Input, NumberInput, OptionCards, Select, Switch, Textarea, type ChoiceOption } from '@/ui/primitives';
@@ -420,39 +421,83 @@ export function SportsForm({ value, onChange }: { value: SportsPrefs; onChange: 
   const update = (i: number, patch: Partial<SportsPrefs['sports'][number]>) => onChange({ sports: value.sports.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
   return (
     <div className="stack-lg">
-      {value.sports.map((sp, i) => (
-        <div key={i} className="card card-pad stack">
-          <div className="row between">
-            <h3>{SPORT_LABELS[sp.sport]}</h3>
-            <Button size="sm" variant="ghost" icon={X} onClick={() => onChange({ sports: value.sports.filter((_, j) => j !== i) })}>
-              Remove
-            </Button>
-          </div>
-          <div className="grid-2">
-            <Field label="Sport">
-              {(p) => (
-                <Select {...p} value={sp.sport} onChange={(e) => update(i, { sport: e.target.value as typeof sp.sport })}>
-                  {SPORTS.map((x) => (
-                    <option key={x} value={x}>
-                      {SPORT_LABELS[x]}
-                    </option>
-                  ))}
-                </Select>
-              )}
+      {value.sports.map((sp, i) => {
+        const info = SPORTS_CATALOG[sp.sport];
+        const dev = sp.teamStatus !== 'on_team';
+        return (
+          <div key={i} className="card card-pad stack">
+            <div className="row between">
+              <h3>{info.label}</h3>
+              <Button size="sm" variant="ghost" icon={X} onClick={() => onChange({ sports: value.sports.filter((_, j) => j !== i) })}>
+                Remove
+              </Button>
+            </div>
+            <div className="grid-2">
+              <Field label="Sport">
+                {(p) => (
+                  <Select {...p} value={sp.sport} onChange={(e) => update(i, { sport: e.target.value as typeof sp.sport, skills: [], position: '' })}>
+                    {SPORTS.map((x) => (
+                      <option key={x} value={x}>
+                        {SPORT_LABELS[x]}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+              <Field label="Position or event" optional>
+                {(p) => (
+                  <>
+                    <Input {...p} value={sp.position} maxLength={40} list={`positions-${i}`} onChange={(e) => update(i, { position: e.target.value })} />
+                    <datalist id={`positions-${i}`}>{info.positions.map((x) => <option key={x} value={x} />)}</datalist>
+                  </>
+                )}
+              </Field>
+            </div>
+            <Chips
+              label="Team situation"
+              value={sp.teamStatus}
+              onChange={(v) => update(i, { teamStatus: v as typeof sp.teamStatus })}
+              options={[
+                { value: 'on_team', label: 'On a team' },
+                { value: 'cut', label: 'Got cut' },
+                { value: 'tryout_prep', label: 'Preparing for tryouts' },
+                { value: 'no_team', label: 'No team right now' },
+              ]}
+            />
+            {sp.teamStatus === 'cut' && (
+              <Why>Getting cut is common, and it isn’t the end. Without team practice, your plan adds more skill sessions, regular skills checks and a countdown to the next tryout.</Why>
+            )}
+            {dev ? (
+              <Field label="Next tryout date" optional hint="Gives you a build → sharpen → peak → taper plan, and keeps hard training off tryout day and the day before.">
+                {(p) => <Input {...p} type="date" value={sp.tryoutDate ?? ''} onChange={(e) => update(i, { tryoutDate: e.target.value || null })} style={{ maxWidth: 200 }} />}
+              </Field>
+            ) : (
+              <>
+                <Chips label="Level" value={sp.level} onChange={(v) => update(i, { level: v as typeof sp.level })} options={[{ value: 'recreational', label: 'Recreational' }, { value: 'school_team', label: 'School team' }, { value: 'club', label: 'Club' }, { value: 'competitive', label: 'Competitive' }]} />
+                <Chips label="Season" value={sp.seasonPhase} onChange={(v) => update(i, { seasonPhase: v as typeof sp.seasonPhase })} options={[{ value: 'off', label: 'Off-season' }, { value: 'pre', label: 'Pre-season' }, { value: 'in', label: 'In season' }, { value: 'post', label: 'Post-season' }]} />
+              </>
+            )}
+            <div className="stack-sm">
+              <Chips<string>
+                label="Skills to focus on (up to 3)"
+                multiple
+                value={sp.skills}
+                onChange={(v) => update(i, { skills: (v as string[]).slice(-3) })}
+                options={info.skills.map((s) => ({ value: s.id, label: s.label }))}
+              />
+              <Why>Each planned session focuses on one of these, rotating through them. Pick none and the plan starts with the basics.</Why>
+            </div>
+            <Field label={dev ? 'What did the coach say to work on?' : 'What does your coach want you to improve?'} optional hint="Shown with every planned session as a reminder.">
+              {(p) => <Textarea {...p} value={sp.coachFeedback} maxLength={500} onChange={(e) => update(i, { coachFeedback: e.target.value })} placeholder="e.g. Weak-hand finishing and getting back on defense" />}
             </Field>
-            <Field label="Position or event" optional>
-              {(p) => <Input {...p} value={sp.position} maxLength={40} onChange={(e) => update(i, { position: e.target.value })} />}
+            <Field label="Your goal" optional>
+              {(p) => <Input {...p} value={sp.goal} maxLength={140} onChange={(e) => update(i, { goal: e.target.value })} placeholder={dev ? 'e.g. Make the JV team in February' : 'e.g. Faster first step'} />}
             </Field>
           </div>
-          <Chips label="Level" value={sp.level} onChange={(v) => update(i, { level: v as typeof sp.level })} options={[{ value: 'recreational', label: 'Recreational' }, { value: 'school_team', label: 'School team' }, { value: 'club', label: 'Club' }, { value: 'competitive', label: 'Competitive' }]} />
-          <Chips label="Season" value={sp.seasonPhase} onChange={(v) => update(i, { seasonPhase: v as typeof sp.seasonPhase })} options={[{ value: 'off', label: 'Off-season' }, { value: 'pre', label: 'Pre-season' }, { value: 'in', label: 'In season' }, { value: 'post', label: 'Post-season' }]} />
-          <Field label="What do you want to improve?" optional>
-            {(p) => <Input {...p} value={sp.goal} maxLength={140} onChange={(e) => update(i, { goal: e.target.value })} placeholder="e.g. Faster first step" />}
-          </Field>
-        </div>
-      ))}
+        );
+      })}
       {value.sports.length < 3 && (
-        <Button icon={Trophy} onClick={() => onChange({ sports: [...value.sports, { sport: 'soccer', position: '', level: 'school_team', seasonPhase: 'in', goal: '' }] })}>
+        <Button icon={Trophy} onClick={() => onChange({ sports: [...value.sports, { sport: 'soccer', position: '', level: 'school_team', seasonPhase: 'in', goal: '', teamStatus: 'on_team', tryoutDate: null, skills: [], coachFeedback: '' }] })}>
           Add a sport
         </Button>
       )}

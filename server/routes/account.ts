@@ -121,6 +121,7 @@ accountRoutes.delete('/integrations/:id', (c) => {
   // Removes the stored (encrypted) token and status. A third party can't revoke a Canvas personal
   // token without its id, so the UI tells the user to delete it in Canvas as well.
   store.deleteIntegration(id);
+  if (id === 'youtube') store.clearCache();
   if (id === 'canvas' && c.req.query('removeData') === '1') {
     store.deleteSourceData(CANVAS_SOURCE);
     store.markStale(startOfWeek(loadContext(store, c.var.now()).today));

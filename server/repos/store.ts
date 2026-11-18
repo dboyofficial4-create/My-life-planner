@@ -604,6 +604,42 @@ export class UserStore {
     this.db.run('DELETE FROM courses WHERE user_id = ? AND source = ?', this.userId, source);
   }
 
+  /* ---------- sports ---------- */
+
+  addSkillTest(t: { sport: string; testId: string; date: string; value: number; note: string }): string {
+    const id = uid();
+    this.db.run('INSERT INTO skill_tests (id, user_id, sport, test_id, date, value, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', id, this.userId, t.sport, t.testId, t.date, t.value, t.note, now());
+    return id;
+  }
+
+  skillTests(sport: string) {
+    return this.db.all<{ id: string; test_id: string; date: string; value: number; note: string }>(
+      'SELECT id, test_id, date, value, note FROM skill_tests WHERE user_id = ? AND sport = ? ORDER BY date, created_at',
+      this.userId, sport,
+    );
+  }
+
+  deleteSkillTest(id: string): boolean {
+    return this.db.run('DELETE FROM skill_tests WHERE id = ? AND user_id = ?', id, this.userId).changes > 0;
+  }
+
+  cacheGet<T>(key: string, maxAgeMs: number): T | null {
+    const r = this.db.get<{ payload: string; fetched_at: number }>('SELECT payload, fetched_at FROM video_cache WHERE user_id = ? AND cache_key = ?', this.userId, key);
+    if (!r || Date.now() - r.fetched_at > maxAgeMs) return null;
+    return parseJson<T | null>(r.payload, null);
+  }
+
+  cacheSet(key: string, payload: unknown) {
+    this.db.run(
+      'INSERT INTO video_cache (user_id, cache_key, payload, fetched_at) VALUES (?, ?, ?, ?) ON CONFLICT(user_id, cache_key) DO UPDATE SET payload = excluded.payload, fetched_at = excluded.fetched_at',
+      this.userId, key, json(payload), Date.now(),
+    );
+  }
+
+  clearCache() {
+    this.db.run('DELETE FROM video_cache WHERE user_id = ?', this.userId);
+  }
+
   /* ---------- progress ---------- */
 
   addLog(l: { date: string; metric: string; value: number; note: string }): string {
@@ -643,6 +679,7 @@ export class UserStore {
       gradeEntries: t('grade_entries'),
       integrations: t('integrations', 'provider, status, last_sync_at, last_error'),
       progressLogs: t('progress_logs'),
+      skillTests: t('skill_tests'),
     };
   }
 }

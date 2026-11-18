@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { Activity, Dumbbell, History, Info, Trophy } from 'lucide-react';
+import { Activity, Dumbbell, History } from 'lucide-react';
 import { useState } from 'react';
 import type { Program, WorkoutPlan } from '@shared/domain/fitness/generator';
-import type { Drill } from '@shared/domain/fitness/sports';
+import { SportsPanel } from '@/features/sports/SportsPanel';
 import { api } from '@/lib/api';
 import { dayLabel } from '@/lib/format';
 import { Badge, Callout, Card, EmptyState, ErrorState, PageHeader, PageSkeleton, Tabs } from '@/ui/primitives';
@@ -12,8 +12,7 @@ interface FitnessData {
   program: Program | null;
   equipment: string[];
   limitations: string[];
-  sports: { sport: string; label: string; position: string; seasonPhase: string; goal: string; drills: Drill[] }[];
-  drillBasis: string;
+  hasSports: boolean;
   history: { id: string; date: string; title: string; status: string; minutes: number; effort: number | null; discomfort: number | null; note: string | null }[];
   load: { date: string; load: number; sessions: string[] }[];
   loadCap: number;
@@ -32,7 +31,7 @@ export default function FitnessPage() {
     ...(d.program ? [{ value: 'program' as const, label: 'Program' }] : []),
     { value: 'load', label: 'Training load' },
     { value: 'history', label: 'History' },
-    ...(d.sports.length ? [{ value: 'sports' as const, label: 'Sport skills' }] : []),
+    ...(d.hasSports ? [{ value: 'sports' as const, label: 'Sport skills' }] : []),
   ];
   const active = tabs.some((t) => t.value === tab) ? tab : tabs[0]!.value;
 
@@ -52,7 +51,7 @@ export default function FitnessPage() {
       )}
       {active === 'load' && <LoadChart d={d} />}
       {active === 'history' && <HistoryList d={d} />}
-      {active === 'sports' && <SportsSection d={d} />}
+      {active === 'sports' && <SportsPanel />}
     </div>
   );
 }
@@ -163,36 +162,5 @@ function HistoryList({ d }: { d: FitnessData }) {
         ))}
       </ul>
     </Card>
-  );
-}
-
-function SportsSection({ d }: { d: FitnessData }) {
-  return (
-    <div className="stack-lg">
-      <Callout tone="neutral" icon={Info} title="About these drills">{d.drillBasis}</Callout>
-      {d.sports.map((s) => (
-        <Card key={s.sport} title={<span className="row-sm"><Trophy aria-hidden style={{ width: 16, color: 'var(--cat-sport)' }} /> {s.label}{s.position && <span className="subtle small">· {s.position}</span>}</span>} action={<Badge>{s.seasonPhase === 'in' ? 'In season' : s.seasonPhase === 'pre' ? 'Pre-season' : s.seasonPhase === 'off' ? 'Off-season' : 'Post-season'}</Badge>} pad={false}>
-          {s.goal && <p className="card-body small"><span className="subtle">Working on:</span> {s.goal}</p>}
-          <ul style={{ listStyle: 'none' }}>
-            {s.drills.map((dr) => (
-              <li key={dr.name} className="exercise">
-                <div className="stack-sm" style={{ gap: 4 }}>
-                  <span className="strong small">{dr.name}</span>
-                  <p className="small muted">{dr.howTo}</p>
-                  <div className="dose">
-                    <span>{dr.minutes} min</span>
-                    <span>{dr.difficulty}</span>
-                    <span>Space: {dr.space}</span>
-                    <span>Equipment: {dr.equipment}</span>
-                    {dr.solo && <span>Solo-friendly</span>}
-                  </div>
-                  <p className="xsmall"><span className="subtle">Track:</span> {dr.measure}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      ))}
-    </div>
   );
 }

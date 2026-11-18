@@ -2,7 +2,8 @@ import type { AgePolicy } from '../age';
 import { addDays, hhmmToMin, weekdayOf, type LocalDate } from '../time';
 import type { Commitment, Goal, SettingsBundle, TimePref } from '../../schemas';
 import type { Program } from '../fitness/generator';
-import { SPORT_LABELS } from '../fitness/sports';
+import { sportInfo } from '../sports/catalog';
+import { PHASE_INFO, focusFor, isDevelopmentMode, skillDose, tryoutPhase } from '../sports/tryout';
 import type { MealEntry } from '../nutrition/mealplan';
 import { recipeById } from '../nutrition/recipes';
 import type { Routine } from '../care/routines';
@@ -95,6 +96,10 @@ export function buildPlanInput(ctx: BuildContext): BuildResult {
   const restDates = dates.filter((d) => sched.restDays.includes(weekdayOf(d)));
   const busyDates = dates.filter((d) => sched.busyDays.includes(weekdayOf(d)));
   const gameDates = new Set(fixed.filter((f) => f.kind === 'game').map((f) => f.date));
+  // Tryouts count like games: no hard training on the day or the day before.
+  if (modules.has('sports')) {
+    for (const s of settings.sports?.sports ?? []) if (s.tryoutDate) gameDates.add(s.tryoutDate);
+  }
   const hardAvoid = dates.filter((d) => gameDates.has(d) || gameDates.has(addDays(d, 1)));
 
   const requests: ActivityRequest[] = [];
@@ -165,25 +170,59 @@ export function buildPlanInput(ctx: BuildContext): BuildResult {
 
   /* ---- Sports skill work ---- */
   if (modules.has('sports') && settings.sports?.sports.length) {
+    const weekStart = dates[0]!;
     for (const s of settings.sports.sports) {
-      const count = s.seasonPhase === 'in' ? 1 : 2;
-      requests.push({
-        key: `sport:${s.sport}`,
-        title: `${SPORT_LABELS[s.sport]} skill practice`,
-        category: 'sport',
-        idealMinutes: 30,
-        minMinutes: 20,
-        count,
-        priority: rank('sports'),
-        window: prefWindow(sched.preferredWorkoutTime, awake[dates[0]!]!, 'workout'),
-        load: 1,
-        avoidDates: dates.filter((d) => gameDates.has(d)),
-        group: `sport:${s.sport}`,
-        minGapDays: 0,
-        explain: `Focused solo practice for ${s.position || 'your role'}${s.goal ? ` toward: ${s.goal}` : ''}. ${s.seasonPhase === 'in' ? 'Kept light because you are in season.' : ''}`.trim(),
-        meta: { sport: s.sport },
-      });
+      const info = sportInfo(s.sport);
+      const dose = skillDose({ status: s.teamStatus, season: s.seasonPhase, today: ctx.today, tryoutDate: s.tryoutDate, weekStart });
+      const dev = isDevelopmentMode(s.teamStatus);
+      const skills = s.skills.filter((k) => info.skills.some((x) => x.id === k));
+      const focusList = skills.length ? skills : info.skills.slice(0, 2).map((x) => x.id);
+      const phase = tryoutPhase(ctx.today, s.tryoutDate);
+      const blocked = dates.filter((d) => gameDates.has(d) || dose.restBefore.includes(d));
+      for (let n = 0; n < dose.sessions; n++) {
+        const focus = focusFor(focusList, weekStart, n);
+        const skill = info.skills.find((x) => x.id === focus);
+        const drills = info.drills.filter((dr) => dr.skill === focus).map((dr) => dr.name);
+        const why = dev
+          ? `${s.teamStatus === 'cut' ? 'Without team practice, these sessions supply the skill work.' : 'Building toward tryouts.'}${phase.daysLeft !== null && phase.daysLeft >= 0 ? ` ${phase.daysLeft} days to tryouts — ${PHASE_INFO[phase.phase].label.toLowerCase()} phase.` : ''}`
+          : s.seasonPhase === 'in' ? 'Kept light because you are in season — team practice does most of the work.' : 'Solo skill work between team practices.';
+        requests.push({
+          key: `sport:${s.sport}:${n}`,
+          title: `${info.label}: ${skill?.label ?? 'skill practice'}`,
+          category: 'sport',
+          idealMinutes: dose.minutes,
+          minMinutes: dose.minMinutes,
+          count: 1,
+          priority: dev ? Math.max(1, rank('sports') - 1) : rank('sports'),
+          window: prefWindow(sched.preferredWorkoutTime, awake[weekStart]!, 'workout'),
+          load: 1,
+          avoidDates: blocked,
+          group: `sport:${s.sport}`,
+          minGapDays: 0,
+          explain: `${why}${s.coachFeedback ? ` Coach feedback: “${s.coachFeedback.slice(0, 120)}”.` : ''}`.trim(),
+          meta: { sport: s.sport, skill: focus, drills, steps: drills },
+        });
+      }
+      if (dose.skillsCheck && info.tests.length) {
+        const weekend = dates.filter((d) => (weekdayOf(d) === 0 || weekdayOf(d) === 6) && !blocked.includes(d));
+        requests.push({
+          key: `sport:${s.sport}:check`,
+          title: `${info.label}: skills check`,
+          category: 'sport',
+          idealMinutes: 25,
+          minMinutes: 15,
+          count: 1,
+          eligibleDates: weekend.length ? weekend : undefined,
+          priority: rank('sports'),
+          window: prefWindow(sched.preferredWorkoutTime, awake[weekStart]!, 'workout'),
+          load: 1,
+          avoidDates: blocked,
+          explain: 'Re-test the same skills the same way and log the results — that’s how you know you’re improving.',
+          meta: { sport: s.sport, skillsCheck: true, steps: info.tests.map((t) => t.name) },
+        });
+      }
     }
+    if (settings.sports.sports.some((s) => s.tryoutDate)) notes.push('Hard training is kept off tryout days and the day before.');
   }
 
   /* ---- School ---- */

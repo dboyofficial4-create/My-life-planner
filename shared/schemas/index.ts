@@ -181,6 +181,13 @@ export const SportsSchema = z.object({
         level: z.enum(['recreational', 'school_team', 'club', 'competitive']),
         seasonPhase: z.enum(['off', 'pre', 'in', 'post']),
         goal: z.string().max(140),
+        /** Team situation. Anything other than on_team means the plan supplies the skill volume practice normally would. */
+        teamStatus: z.enum(['on_team', 'cut', 'tryout_prep', 'no_team']).default('on_team'),
+        tryoutDate: localDate.nullable().default(null),
+        /** Focus skill ids from the sports catalog. */
+        skills: z.array(z.string().max(40)).max(5).default([]),
+        /** What a coach said to work on. */
+        coachFeedback: z.string().max(500).default(''),
       }),
     )
     .max(3),

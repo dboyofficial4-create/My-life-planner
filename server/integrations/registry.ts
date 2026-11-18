@@ -78,17 +78,24 @@ export const INTEGRATIONS: IntegrationDef[] = [
     },
   },
   {
-    id: 'sports_data',
-    connectable: false,
-    isConfigured: () => false,
+    id: 'youtube',
+    connectable: true,
+    isConfigured: (cfg) => !!cfg.encryptionKey,
     describe: {
-      name: 'Sports data source',
+      name: 'YouTube (vetted coaching channels)',
       module: 'sports',
-      status: 'planned',
-      implemented: ['Built-in general drills, labelled as general coaching practice.'],
-      requires: ['Choosing a verified source (e.g. a governing body’s coaching curriculum) and confirming its licence, cost and coverage.'],
-      unsupported: ['Live professional statistics — they are not evidence for individual training plans and aren’t used.'],
-      fallback: 'General drills plus your own logged results.',
+      status: 'available',
+      implemented: [
+        'Finds videos for your focus skills — but only from vetted channels (national governing bodies and established coaching channels), never all of YouTube.',
+        'Each channel is checked at runtime: if its name doesn’t match what’s expected, it’s ignored.',
+        'Results are cached for a week to stay within YouTube’s free daily quota. Safe search is always on.',
+      ],
+      requires: [
+        'A free YouTube Data API key (Google Cloud Console → create a project → enable “YouTube Data API v3” → Credentials → Create API key).',
+        'Your key is stored encrypted and only sent to YouTube.',
+      ],
+      unsupported: ['Sports without a verified channel yet (swimming, tennis, track) show official written resources instead of videos.', 'Live professional statistics — they don’t help individual training and aren’t used.'],
+      fallback: 'Without a key, each sport links to its vetted channels on YouTube, plus written resources from governing bodies.',
     },
   },
   {

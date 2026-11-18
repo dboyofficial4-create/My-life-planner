@@ -4,7 +4,6 @@ import type { AppEnv } from '../app';
 import { body, HttpError } from '../http';
 import { ProgressLogInput, isLocalDate } from '../../shared/schemas';
 import { addDays, startOfWeek } from '../../shared/domain/time';
-import { DRILLS, DRILL_BASIS, SPORT_LABELS } from '../../shared/domain/fitness/sports';
 import { EQUIPMENT_LABELS } from '../../shared/schemas';
 import { buildGroceryList, dailyNutrition, SECTION_ORDER } from '../../shared/domain/nutrition/grocery';
 import { compatibleRecipes, recipeFit } from '../../shared/domain/nutrition/mealplan';
@@ -35,15 +34,11 @@ moduleRoutes.get('/fitness', (c) => {
     load: weekItems.filter((i) => i.date === d && i.status !== 'skipped').reduce((s, i) => s + i.load, 0),
     sessions: weekItems.filter((i) => i.date === d && i.load > 0 && i.status !== 'skipped').map((i) => i.title),
   }));
-  const sports = ctx.modules.has('sports')
-    ? (ctx.settings.sports?.sports ?? []).map((s) => ({ ...s, label: SPORT_LABELS[s.sport], drills: DRILLS[s.sport] }))
-    : [];
   return c.json({
     program: ctx.program,
     equipment: (ctx.settings.fitness?.equipment ?? []).map((e) => EQUIPMENT_LABELS[e]),
     limitations: ctx.settings.fitness?.limitations ?? [],
-    sports,
-    drillBasis: DRILL_BASIS,
+    hasSports: ctx.modules.has('sports') && !!ctx.settings.sports?.sports.length,
     history,
     load,
     loadCap: 3,

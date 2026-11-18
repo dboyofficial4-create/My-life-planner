@@ -224,4 +224,28 @@ ALTER TABLE grade_entries ADD COLUMN external_id TEXT;
 CREATE INDEX courses_external ON courses(user_id, source, external_id);
 `,
   },
+  {
+    id: 3,
+    name: 'sports_tests_and_video_cache',
+    sql: `
+CREATE TABLE skill_tests (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  sport TEXT NOT NULL,
+  test_id TEXT NOT NULL,
+  date TEXT NOT NULL,
+  value REAL NOT NULL,
+  note TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL
+);
+CREATE INDEX skill_tests_user ON skill_tests(user_id, sport, test_id, date);
+CREATE TABLE video_cache (
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  cache_key TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  fetched_at INTEGER NOT NULL,
+  PRIMARY KEY (user_id, cache_key)
+);
+`,
+  },
 ];

@@ -216,6 +216,68 @@ function CanvasPanel({ i }: { i: Integration }) {
   );
 }
 
+/* ---------- YouTube ---------- */
+
+function YouTubePanel({ i }: { i: Integration }) {
+  const [key, setKey] = useState('');
+  const [consent, setConsent] = useState(false);
+  const qc = useQueryClient();
+  const toast = useToast();
+  const connect = useMutation({
+    mutationFn: () => api.post('/integrations/youtube/key', { key, consent }),
+    onSuccess: () => {
+      setKey('');
+      for (const k of ['integrations', 'sports', 'sport-videos']) qc.invalidateQueries({ queryKey: [k] });
+      toast({ message: 'YouTube connected. Videos now appear under Fitness & Sports → Sport skills.' });
+    },
+  });
+  const disconnect = useMutation({
+    mutationFn: () => api.del('/integrations/youtube'),
+    onSuccess: () => {
+      for (const k of ['integrations', 'sports', 'sport-videos']) qc.invalidateQueries({ queryKey: [k] });
+      toast({ message: 'YouTube disconnected and the stored key deleted.' });
+    },
+  });
+  const f = fieldErrors(connect.error);
+  if (!i.configured) return <Callout tone="warning">The server has no encryption key, so API keys can’t be stored safely.</Callout>;
+  if (i.connection && i.connection.status !== 'needs_reconnect') {
+    return (
+      <div className="stack-sm">
+        {i.connection.lastError && <Callout tone="warning">{i.connection.lastError}</Callout>}
+        <div className="row-wrap between">
+          <span className="small">Connected. {i.connection.lastSyncAt ? `Last video search ${new Date(i.connection.lastSyncAt).toLocaleString()}.` : 'No searches yet.'}</span>
+          <Button size="sm" variant="ghost" icon={Link2Off} loading={disconnect.isPending} onClick={() => disconnect.mutate()}>Disconnect</Button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <form className="stack" noValidate onSubmit={(e) => { e.preventDefault(); connect.mutate(); }}>
+      {i.connection?.status === 'needs_reconnect' && <Callout tone="warning">{i.connection.lastError ?? 'The saved key stopped working. Add a new one.'}</Callout>}
+      <details className="details">
+        <summary>How to get a free API key (about 5 minutes)</summary>
+        <ol className="small muted stack-sm" style={{ paddingLeft: 18 }}>
+          <li>Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">Google Cloud Console</a> and sign in. (If you’re under 18, ask a parent or guardian to help.)</li>
+          <li>Create a project (any name, e.g. “Waypoint”).</li>
+          <li>Open <span className="strong">APIs &amp; Services → Library</span>, search for <span className="strong">YouTube Data API v3</span> and click <span className="strong">Enable</span>.</li>
+          <li>Open <span className="strong">APIs &amp; Services → Credentials → Create credentials → API key</span>, and copy the key.</li>
+          <li>Optional but recommended: edit the key and restrict it to the YouTube Data API v3.</li>
+        </ol>
+        <p className="xsmall subtle">The free quota is plenty for personal use; Waypoint caches results for a week.</p>
+      </details>
+      <Field label="YouTube Data API key" hint="Stored encrypted and only sent to YouTube." error={f.key}>
+        {(p) => <Input {...p} type="password" value={key} onChange={(e) => setKey(e.target.value)} autoComplete="off" spellCheck={false} style={{ maxWidth: 420 }} />}
+      </Field>
+      <label className="checkbox small" style={{ alignItems: 'flex-start' }}>
+        <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 2 }} />
+        <span>Use this key to search vetted YouTube channels for videos about my sports’ skills.</span>
+      </label>
+      {connect.error && !f.key && <Callout tone="danger">{errorMessage(connect.error)}</Callout>}
+      <div><Button type="submit" variant="primary" icon={PlugZap} loading={connect.isPending} disabled={!key.trim() || !consent}>Connect YouTube</Button></div>
+    </form>
+  );
+}
+
 /* ---------- list ---------- */
 
 export function IntegrationsList({ module }: { module?: string }) {
@@ -229,7 +291,7 @@ export function IntegrationsList({ module }: { module?: string }) {
         const st = STATUS[i.status];
         const conn = i.connection;
         const badge =
-          i.id === 'canvas' && conn
+          (i.id === 'canvas' || i.id === 'youtube') && conn
             ? conn.status === 'connected'
               ? <Badge tone="success" icon={CheckCircle2}>Connected</Badge>
               : <Badge tone="warning" icon={AlertTriangle}>{conn.status === 'needs_reconnect' ? 'Needs reconnecting' : 'Sync problem'}</Badge>
@@ -241,7 +303,15 @@ export function IntegrationsList({ module }: { module?: string }) {
             action={badge}
             footer={i.id === 'ics_import' && conn?.lastSyncAt ? <span className="xsmall subtle">Last used {new Date(conn.lastSyncAt).toLocaleString()}</span> : undefined}
           >
-            {i.id === 'canvas' ? (
+            {i.id === 'youtube' ? (
+              <div className="stack-lg">
+                <YouTubePanel i={i} />
+                <details className="details">
+                  <summary>How videos are chosen, and limits</summary>
+                  <Details i={i} />
+                </details>
+              </div>
+            ) : i.id === 'canvas' ? (
               <div className="stack-lg">
                 <CanvasPanel i={i} />
                 <details className="details">

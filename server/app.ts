@@ -12,6 +12,7 @@ import { planRoutes } from './routes/plan';
 import { moduleRoutes } from './routes/modules';
 import { schoolRoutes } from './routes/school';
 import { accountRoutes } from './routes/account';
+import { sportsRoutes } from './routes/sports';
 
 export interface AppConfig {
   /** Secure cookies (HTTPS). True in production. */
@@ -88,6 +89,7 @@ export function createApp(db: Db, config: AppConfig) {
   app.route('/api', planRoutes);
   app.route('/api', moduleRoutes);
   app.route('/api/school', schoolRoutes);
+  app.route('/api', sportsRoutes);
   app.route('/api', accountRoutes);
   app.all('/api/*', () => {
     throw new HttpError(404, 'not_found', 'Not found.');

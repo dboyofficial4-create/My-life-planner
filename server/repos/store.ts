@@ -626,11 +626,11 @@ export class UserStore {
   materials(scope: { courseId: string | null; assignmentId: string | null }) {
     const [where, args] = this.scopeWhere(scope);
     return this.db
-      .all<{ id: string; course_id: string | null; assignment_id: string | null; kind: 'notes' | 'link'; title: string; body: string; url: string | null; updated_at: string }>(`SELECT * FROM study_materials WHERE ${where} ORDER BY updated_at DESC`, ...args)
+      .all<{ id: string; course_id: string | null; assignment_id: string | null; kind: 'notes' | 'link' | 'generated'; title: string; body: string; url: string | null; updated_at: string }>(`SELECT * FROM study_materials WHERE ${where} ORDER BY updated_at DESC`, ...args)
       .map((r) => ({ id: r.id, courseId: r.course_id, assignmentId: r.assignment_id, kind: r.kind, title: r.title, body: r.body, url: r.url, updatedAt: r.updated_at }));
   }
 
-  createMaterial(scope: { courseId: string | null; assignmentId: string | null }, m: { kind: 'notes' | 'link'; title: string; body: string; url: string | null }): string {
+  createMaterial(scope: { courseId: string | null; assignmentId: string | null }, m: { kind: 'notes' | 'link' | 'generated'; title: string; body: string; url: string | null }): string {
     const id = uid();
     const t = now();
     this.db.run('INSERT INTO study_materials (id, user_id, course_id, assignment_id, kind, title, body, url, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', id, this.userId, scope.courseId, scope.assignmentId, m.kind, m.title, m.body, m.url, t, t);
@@ -718,6 +718,43 @@ export class UserStore {
     return this.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM flashcards WHERE user_id = ? AND due_date <= ?', this.userId, date)!.n;
   }
 
+  /* ---------- practice questions ---------- */
+
+  questions(scope: { courseId: string | null; assignmentId: string | null }) {
+    const [where, args] = this.scopeWhere(scope);
+    return this.db
+      .all<{ id: string; kind: string; topic: string; question: string; choices: string; answer: string; explanation: string; correct: number; wrong: number; assignment_id: string | null }>(`SELECT * FROM practice_questions WHERE ${where} ORDER BY created_at`, ...args)
+      .map((r) => ({ id: r.id, kind: r.kind as 'multiple_choice' | 'true_false' | 'short_answer', topic: r.topic, question: r.question, choices: parseJson<string[]>(r.choices, []), answer: r.answer, explanation: r.explanation, correct: r.correct, wrong: r.wrong, assignmentId: r.assignment_id }));
+  }
+
+  createQuestions(scope: { courseId: string | null; assignmentId: string | null }, qs: { kind: string; topic: string; question: string; choices: string[]; answer: string; explanation: string }[]): number {
+    const t = now();
+    for (const q of qs) {
+      this.db.run(
+        'INSERT INTO practice_questions (id, user_id, course_id, assignment_id, kind, topic, question, choices, answer, explanation, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        uid(), this.userId, scope.courseId, scope.assignmentId, q.kind, q.topic, q.question, json(q.choices), q.answer, q.explanation, t,
+      );
+    }
+    return qs.length;
+  }
+
+  recordAnswer(id: string, correct: boolean): { topic: string; courseId: string | null; assignmentId: string | null } | null {
+    const r = this.db.get<{ topic: string; course_id: string | null; assignment_id: string | null }>('SELECT topic, course_id, assignment_id FROM practice_questions WHERE id = ? AND user_id = ?', id, this.userId);
+    if (!r) return null;
+    this.db.run('UPDATE practice_questions SET correct = correct + ?, wrong = wrong + ? WHERE id = ? AND user_id = ?', correct ? 1 : 0, correct ? 0 : 1, id, this.userId);
+    return { topic: r.topic, courseId: r.course_id, assignmentId: r.assignment_id };
+  }
+
+  deleteQuestion(id: string): boolean {
+    return this.db.run('DELETE FROM practice_questions WHERE id = ? AND user_id = ?', id, this.userId).changes > 0;
+  }
+
+  /** Set a topic's confidence by title within a scope (used after a practice test). */
+  setTopicConfidenceByTitle(scope: { courseId: string | null; assignmentId: string | null }, title: string, confidence: number) {
+    const t = this.topics(scope).find((x) => x.title.toLowerCase() === title.toLowerCase());
+    if (t) this.setTopicConfidence(t.id, confidence);
+  }
+
   /* ---------- sports ---------- */
 
   addSkillTest(t: { sport: string; testId: string; date: string; value: number; note: string }): string {
@@ -797,6 +834,7 @@ export class UserStore {
       studyMaterials: t('study_materials'),
       studyTopics: t('study_topics'),
       flashcards: t('flashcards'),
+      practiceQuestions: t('practice_questions'),
     };
   }
 }

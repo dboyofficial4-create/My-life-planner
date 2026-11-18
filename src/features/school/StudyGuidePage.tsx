@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
-import { ArrowLeft, BookOpen, Brain, CalendarClock, ExternalLink, FileUp, Layers, Lightbulb, Link2, ListChecks, Pencil, Plus, Sparkles, StickyNote, Trash2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Brain, CalendarClock, ClipboardCheck, ExternalLink, FileUp, Layers, Lightbulb, Link2, ListChecks, Pencil, Plus, Sparkles, StickyNote, Trash2, Upload } from 'lucide-react';
+import { AddMaterialDialog } from './AddMaterialDialog';
 import { useState, type ChangeEvent } from 'react';
 import { cardsFromNotes, topicsFromNotes, type CardDraft, type MethodId, type StudyMethod, type StudySource } from '@shared/domain/school/studyguide';
 import { api, ApiError, errorMessage, fieldErrors } from '@/lib/api';
@@ -8,7 +9,7 @@ import { dayLabel, relativeDay, relativeDayInline, timeRange } from '@/lib/forma
 import { Dialog, useToast } from '@/ui/overlay';
 import { Badge, Button, Callout, Card, EmptyState, ErrorState, Field, Input, PageHeader, PageSkeleton, Segmented, Textarea } from '@/ui/primitives';
 
-interface Material { id: string; courseId: string | null; assignmentId: string | null; kind: 'notes' | 'link'; title: string; body: string; url: string | null; updatedAt: string }
+interface Material { id: string; courseId: string | null; assignmentId: string | null; kind: 'notes' | 'link' | 'generated'; title: string; body: string; url: string | null; updatedAt: string }
 interface Guide {
   today: string;
   clock: '12h' | '24h';
@@ -20,6 +21,7 @@ interface Guide {
   topics: { id: string; title: string; confidence: number }[];
   materials: Material[];
   cards: { total: number; due: number; mastered: number };
+  questions: number;
   next: { title: string; detail: string; method: MethodId }[];
   methods: StudyMethod[];
   sources: Record<string, StudySource>;
@@ -70,6 +72,9 @@ function useRefresh() {
 
 function GuideView({ g, qs }: { g: Guide; qs: string }) {
   const a = g.assignment;
+  const [uploading, setUploading] = useState(false);
+  const target = g.scope.assignmentId ? `a:${g.scope.assignmentId}` : `c:${g.scope.courseId}`;
+  const targetLabel = a ? a.title : g.course?.name ?? 'This course';
   const methodName = (id: MethodId) => g.methods.find((m) => m.id === id)?.name ?? id;
   const title = a ? `Study guide: ${a.title}` : `${g.course?.name ?? 'Course'} — study materials`;
   return (
@@ -79,12 +84,50 @@ function GuideView({ g, qs }: { g: Guide; qs: string }) {
         title={title}
         description={a ? `${g.course?.name ?? 'No course'} · ${a.type} · due ${relativeDayInline(a.dueDate, g.today)} (${dayLabel(a.dueDate, { weekday: 'short', month: 'short', day: 'numeric' })})` : 'Notes, links, topics and flashcards for the whole course.'}
         actions={
-          <Link to={reviewLink(g.scope)} className={`btn ${g.cards.due ? 'btn-primary' : 'btn-secondary'}`}>
-            <Layers aria-hidden /> {g.cards.due ? `Review ${g.cards.due} due card${g.cards.due === 1 ? '' : 's'}` : 'Practise flashcards'}
-          </Link>
+          <>
+            <Button variant="primary" icon={Upload} onClick={() => setUploading(true)}>Upload & generate</Button>
+            <Link to={reviewLink(g.scope)} className="btn btn-secondary">
+              <Layers aria-hidden /> {g.cards.due ? `Review ${g.cards.due} due card${g.cards.due === 1 ? '' : 's'}` : 'Flashcards'}
+            </Link>
+          </>
         }
       />
       {a && a.daysLeft < 0 && a.status === 'open' && <Callout tone="warning">This was due {Math.abs(a.daysLeft)} day{a.daysLeft === -1 ? '' : 's'} ago. Update the due date in School if it moved.</Callout>}
+
+      {uploading && <AddMaterialDialog open onClose={() => setUploading(false)} targets={[{ value: target, label: targetLabel, group: a ? 'assignment' : 'course' }]} initialTarget={target} />}
+
+      {g.questions === 0 && g.cards.total === 0 && g.materials.length === 0 ? (
+        <Card>
+          <div className="row-wrap between">
+            <div className="stack-sm" style={{ gap: 2 }}>
+              <h2>Start by uploading your material</h2>
+              <p className="small muted">Notes, slides, a study sheet or photos of the board. You’ll get flashcards, a practice test and a study sheet in about a minute.</p>
+            </div>
+            <Button variant="primary" icon={Upload} onClick={() => setUploading(true)}>Upload & generate</Button>
+          </div>
+        </Card>
+      ) : (
+        <div className="grid-2">
+          <Card>
+            <div className="row between">
+              <div className="stack-sm" style={{ gap: 2 }}>
+                <h2 className="row-sm"><ClipboardCheck aria-hidden style={{ width: 18 }} /> Practice test</h2>
+                <p className="small muted">{g.questions ? `${g.questions} questions from your material.` : 'Upload material to get one.'}</p>
+              </div>
+              {g.questions ? <Link className="btn btn-primary" to={`/school/practice?${qs}`}>Start</Link> : <Button onClick={() => setUploading(true)} icon={Upload}>Upload</Button>}
+            </div>
+          </Card>
+          <Card>
+            <div className="row between">
+              <div className="stack-sm" style={{ gap: 2 }}>
+                <h2 className="row-sm"><Layers aria-hidden style={{ width: 18 }} /> Flashcards</h2>
+                <p className="small muted">{g.cards.total ? `${g.cards.due} due now · ${g.cards.total} total` : 'None yet.'}</p>
+              </div>
+              {g.cards.total > 0 && <Link className={`btn ${g.cards.due ? 'btn-primary' : 'btn-secondary'}`} to={reviewLink(g.scope)}>{g.cards.due ? 'Review' : 'Practise'}</Link>}
+            </div>
+          </Card>
+        </div>
+      )}
 
       <Card title={<span className="row-sm"><Lightbulb aria-hidden style={{ width: 16, color: 'var(--accent-text)' }} /> What to do next</span>}>
         <ol className="stack" style={{ listStyle: 'none' }}>
@@ -246,7 +289,7 @@ function Materials({ g }: { g: Guide }) {
           {g.materials.map((m) => (
             <li key={m.id} className="list-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 'var(--s-2)' }}>
               <div className="row">
-                {m.kind === 'link' ? <Link2 aria-hidden style={{ width: 16, color: 'var(--text-3)' }} /> : <StickyNote aria-hidden style={{ width: 16, color: 'var(--text-3)' }} />}
+                {m.kind === 'link' ? <Link2 aria-hidden style={{ width: 16, color: 'var(--text-3)' }} /> : m.kind === 'generated' ? <Sparkles aria-hidden style={{ width: 16, color: 'var(--accent-text)' }} /> : <StickyNote aria-hidden style={{ width: 16, color: 'var(--text-3)' }} />}
                 <div className="grow">
                   {m.kind === 'link' ? (
                     <a href={m.url!} target="_blank" rel="noopener noreferrer nofollow" className="small strong row-sm" style={{ display: 'inline-flex' }}>{m.title} <ExternalLink aria-hidden style={{ width: 12 }} /></a>
@@ -254,15 +297,16 @@ function Materials({ g }: { g: Guide }) {
                     <button className="link-button small strong" onClick={() => setOpen(open === m.id ? null : m.id)} aria-expanded={open === m.id}>{m.title}</button>
                   )}
                   <div className="xsmall subtle">
-                    {m.kind === 'link' ? new URL(m.url!).hostname : `${m.body.length.toLocaleString()} characters`}
+                    {m.kind === 'link' ? new URL(m.url!).hostname : m.kind === 'generated' ? 'AI-generated from your material — double-check anything that looks off' : `${m.body.length.toLocaleString()} characters`}
                     {g.assignment && !m.assignmentId ? ' · course-wide' : ''}
                   </div>
                 </div>
                 {m.kind === 'notes' && <Button size="sm" variant="ghost" icon={Layers} onClick={() => setCardsFrom(m)}>Make cards</Button>}
-                <Button size="sm" variant="ghost" iconOnly icon={Pencil} aria-label={`Edit ${m.title}`} onClick={() => { save.reset(); setEditing({ id: m.id, kind: m.kind, title: m.title, body: m.body, url: m.url ?? '', courseWide: !m.assignmentId }); }} />
+                {m.kind === 'generated' && <span className="badge badge-accent">AI-generated</span>}
+                <Button size="sm" variant="ghost" iconOnly icon={Pencil} aria-label={`Edit ${m.title}`} onClick={() => { save.reset(); setEditing({ id: m.id, kind: m.kind === 'link' ? 'link' : 'notes', title: m.title, body: m.body, url: m.url ?? '', courseWide: !m.assignmentId }); }} />
                 <Button size="sm" variant="ghost" iconOnly icon={Trash2} aria-label={`Delete ${m.title}`} onClick={() => { if (confirm(`Delete “${m.title}”?`)) del.mutate(m.id); }} />
               </div>
-              {open === m.id && m.kind === 'notes' && <div className="notes-body small">{m.body}</div>}
+              {open === m.id && m.kind !== 'link' && <div className="notes-body small">{m.body}</div>}
             </li>
           ))}
         </ul>

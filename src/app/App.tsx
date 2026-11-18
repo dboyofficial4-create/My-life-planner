@@ -15,6 +15,7 @@ const FitnessPage = lazy(() => import('@/features/fitness/FitnessPage'));
 const SchoolPage = lazy(() => import('@/features/school/SchoolPage'));
 const StudyGuidePage = lazy(() => import('@/features/school/StudyGuidePage'));
 const ReviewPage = lazy(() => import('@/features/school/ReviewPage'));
+const PracticeTestPage = lazy(() => import('@/features/school/PracticeTestPage'));
 const FoodPage = lazy(() => import('@/features/food/FoodPage'));
 const CarePage = lazy(() => import('@/features/care/CarePage'));
 const ProgressPage = lazy(() => import('@/features/progress/ProgressPage'));
@@ -76,6 +77,7 @@ export function App() {
                   <Route path="school" element={<ModuleRoute modules={['school']}><SchoolPage /></ModuleRoute>} />
                   <Route path="school/study" element={<ModuleRoute modules={['school']}><StudyGuidePage /></ModuleRoute>} />
                   <Route path="school/review" element={<ModuleRoute modules={['school']}><ReviewPage /></ModuleRoute>} />
+                  <Route path="school/practice" element={<ModuleRoute modules={['school']}><PracticeTestPage /></ModuleRoute>} />
                   <Route path="food" element={<ModuleRoute modules={['nutrition']}><FoodPage /></ModuleRoute>} />
                   <Route path="care" element={<ModuleRoute modules={['skincare', 'haircare']}><CarePage /></ModuleRoute>} />
                   <Route path="progress" element={<ProgressPage />} />

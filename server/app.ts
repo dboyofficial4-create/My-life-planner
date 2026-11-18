@@ -21,6 +21,10 @@ export interface AppConfig {
   /** 32-byte base64 key for encrypting integration tokens at rest. Optional until an integration needs it. */
   encryptionKey?: string;
   canvas?: { clientId: string; clientSecret: string; redirectUri: string };
+  /** Server-wide Anthropic API key (ANTHROPIC_API_KEY). If unset, users can add their own in Settings → Connections. */
+  anthropicApiKey?: string;
+  /** AI study-set generator factory (overridden in tests). */
+  studyAI?: import('./services/studyAI').StudyAIFactory;
   /** fetch override for tests (external API calls). */
   fetch?: typeof fetch;
   /** Clock override for tests. */
@@ -47,7 +51,10 @@ export function createApp(db: Db, config: AppConfig) {
   const limiter = new Map<string, { count: number; resetAt: number }>();
 
   app.use('*', secureHeaders({ referrerPolicy: 'same-origin', crossOriginEmbedderPolicy: false }));
-  app.use('/api/*', bodyLimit({ maxSize: 512 * 1024, onError: () => { throw new HttpError(413, 'too_large', 'That upload is too large.'); } }));
+  // Study-material uploads may carry files (base64); everything else stays small.
+  const uploadLimit = bodyLimit({ maxSize: 30 * 1024 * 1024, onError: () => { throw new HttpError(413, 'too_large', 'Files are too large together (20 MB max).'); } });
+  const defaultLimit = bodyLimit({ maxSize: 512 * 1024, onError: () => { throw new HttpError(413, 'too_large', 'That upload is too large.'); } });
+  app.use('/api/*', (c, next) => (c.req.path === '/api/school/study/generate' ? uploadLimit(c, next) : defaultLimit(c, next)));
   app.use('/api/*', async (c, next) => {
     c.set('db', db);
     c.set('config', config);

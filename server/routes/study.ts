@@ -6,6 +6,8 @@ import { splitIntoSteps } from '../../shared/domain/school/study';
 import { LOW_UTILITY_NOTE, STUDY_METHODS, STUDY_SOURCES, methodsForStep, nextSteps, reviewCard } from '../../shared/domain/school/studyguide';
 import { daysBetween, startOfWeek } from '../../shared/domain/time';
 import { loadContext } from '../services/context';
+import { decryptSecret } from '../auth/crypto';
+import { anthropicStudyAI, sanitizeStudySet, toContentBlocks } from '../services/studyAI';
 
 /** Mounted under /api/school/study (inherits the School-module check). */
 export const studyRoutes = new Hono<AppEnv>();
@@ -45,6 +47,7 @@ studyRoutes.get('/guide', (c) => {
   const materials = store.materials(scope);
   const cards = store.cards(scope);
   const cardsDue = cards.filter((x) => x.dueDate <= ctx.today).length;
+  const questionCount = store.questions(scope).length;
   const isTest = !!assignment && ['test', 'exam', 'quiz'].includes(assignment.type);
 
   // Study sessions already in the plan for this assignment.
@@ -72,7 +75,11 @@ studyRoutes.get('/guide', (c) => {
     topics,
     materials,
     cards: { total: cards.length, due: cardsDue, mastered: cards.filter((x) => x.box >= 4).length },
-    next: nextSteps({ dueDate: assignment?.dueDate ?? null, today: ctx.today, topics, cardsDue, cardsTotal: cards.length, materials: materials.length, isTest: isTest || !assignment }),
+    questions: questionCount,
+    next: [
+      ...(questionCount ? [{ title: `Take the ${questionCount}-question practice test`, detail: 'Answer before you look. Topics you miss are marked so your next steps focus on them.', method: 'retrieval' as const }] : []),
+      ...nextSteps({ dueDate: assignment?.dueDate ?? null, today: ctx.today, topics, cardsDue, cardsTotal: cards.length, materials: materials.length, isTest: isTest || !assignment }),
+    ].slice(0, 4),
     methods: Object.values(STUDY_METHODS),
     sources: STUDY_SOURCES,
     lowUtilityNote: LOW_UTILITY_NOTE,
@@ -177,4 +184,102 @@ studyRoutes.post('/cards/:id/review', async (c) => {
 studyRoutes.delete('/cards/:id', (c) => {
   if (!c.var.store.deleteCard(c.req.param('id'))) throw new HttpError(404, 'not_found', 'Card not found.');
   return c.json({ ok: true });
+});
+
+/* ---------- AI: upload material → study set ---------- */
+
+/** The key to use: the server's (if configured) or the student's own. */
+export function aiKeyFor(c: Context<AppEnv>): string | null {
+  if (c.var.config.anthropicApiKey) return c.var.config.anthropicApiKey;
+  const enc = c.var.store.integrationToken('anthropic');
+  return enc && c.var.config.encryptionKey ? decryptSecret(enc, c.var.config.encryptionKey) : null;
+}
+
+const GenerateInput = Scope.extend({
+  files: z
+    .array(z.object({ name: z.string().max(200), mediaType: z.string().max(120), data: z.string().max(28_000_000) }))
+    .max(10, 'Upload up to 10 files at a time'),
+  text: z.string().max(100_000),
+  flashcards: z.number().int().min(5).max(40),
+  questions: z.number().int().min(3).max(25),
+  consent: z.literal(true, { error: 'Please confirm the material can be sent to the AI service' }),
+});
+
+studyRoutes.post('/generate', async (c) => {
+  const input = await body(c, GenerateInput);
+  const store = c.var.store;
+  const ctx = loadContext(store, c.var.now());
+  const scope = scopeOf(c, input);
+  if (!scope.courseId && !scope.assignmentId) throw new HttpError(422, 'validation', 'Choose which test or course this is for.');
+  const key = aiKeyFor(c);
+  if (!key) throw new HttpError(409, 'ai_not_connected', 'Add an Anthropic API key in Settings → Connections to generate study sets.');
+
+  const content = toContentBlocks(input.files, input.text);
+  const assignment = scope.assignmentId ? store.assignments().find((a) => a.id === scope.assignmentId) : undefined;
+  const course = scope.courseId ? store.course(scope.courseId) : undefined;
+  const ai = (c.var.config.studyAI ?? anthropicStudyAI)(key);
+  const result = await ai.generate(content, {
+    subject: course?.name ?? null,
+    assessment: assignment?.title ?? null,
+    assessmentType: assignment?.type ?? null,
+    flashcards: input.flashcards,
+    questions: input.questions,
+  });
+  if (result.set.insufficient) {
+    throw new HttpError(422, 'ai_insufficient', result.set.insufficientReason || 'There wasn’t enough readable material to make a study set.');
+  }
+  const set = sanitizeStudySet(result.set, input);
+  if (!set.flashcards.length && !set.questions.length) throw new HttpError(422, 'ai_insufficient', 'Couldn’t make study material from that. Try clearer or longer notes.');
+
+  const counts = store.tx(() => {
+    store.createMaterial(scope, { kind: 'generated', title: `AI study sheet: ${set.title}`, body: set.overview ? `${set.overview}\n\n${set.studySheet}` : set.studySheet, url: null });
+    // Keep the student's own pasted/text notes too (uploaded files themselves are not stored).
+    if (input.text.trim()) store.createMaterial(scope, { kind: 'notes', title: 'Pasted notes', body: input.text.slice(0, 50_000), url: null });
+    const topics = store.createTopics(scope, set.topics.map((t) => t.title));
+    const cards = store.createCards(scope, set.flashcards, ctx.today);
+    const questions = store.createQuestions(scope, set.questions);
+    return { topics, cards, questions };
+  });
+  store.markStale(startOfWeek(ctx.today));
+  return c.json({ ok: true, title: set.title, ...counts, usage: result.usage, model: result.model }, 201);
+});
+
+/* ---------- practice tests ---------- */
+
+studyRoutes.get('/questions', (c) => {
+  const scope = scopeOf(c, { courseId: c.req.query('courseId') || null, assignmentId: c.req.query('assignmentId') || null });
+  return c.json({ questions: c.var.store.questions(scope) });
+});
+
+studyRoutes.delete('/questions/:id', (c) => {
+  if (!c.var.store.deleteQuestion(c.req.param('id'))) throw new HttpError(404, 'not_found', 'Question not found.');
+  return c.json({ ok: true });
+});
+
+/** Record a finished practice test and update topic confidence from the results. */
+studyRoutes.post('/test-results', async (c) => {
+  const input = await body(c, Scope.extend({ results: z.array(z.object({ questionId: z.string(), correct: z.boolean() })).min(1).max(100) }));
+  const store = c.var.store;
+  const scope = scopeOf(c, input);
+  const byTopic = new Map<string, { right: number; total: number }>();
+  let right = 0;
+  store.tx(() => {
+    for (const r of input.results) {
+      const q = store.recordAnswer(r.questionId, r.correct);
+      if (!q) continue;
+      if (r.correct) right++;
+      if (!q.topic) continue;
+      const t = byTopic.get(q.topic) ?? { right: 0, total: 0 };
+      t.total++;
+      if (r.correct) t.right++;
+      byTopic.set(q.topic, t);
+    }
+    for (const [topic, t] of byTopic) {
+      // All right → got it; most right → shaky; otherwise not yet.
+      const confidence = t.right === t.total ? 2 : t.right / t.total >= 0.5 ? 1 : 0;
+      store.setTopicConfidenceByTitle(scope, topic, confidence);
+    }
+  });
+  const weak = [...byTopic.entries()].filter(([, t]) => t.right < t.total).map(([topic]) => topic);
+  return c.json({ right, total: input.results.length, weakTopics: weak });
 });

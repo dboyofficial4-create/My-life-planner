@@ -28,3 +28,13 @@ Policies: Waypoint never asks for school passwords and never scrapes restricted 
 * **Verified channels:** Breakthrough Basketball (@BreakthroughBBall), U.S. Soccer (@ussoccer), USA Football (@usafootball, channel id verified), USA Baseball (@USABaseball, channel id verified) and USA Volleyball (@USAVolleyball). No channel could be verified for swimming, tennis or track, so those sports show written resources only.
 * **Pitch Smart:** the rest-day tiers and daily maximums for ages 7–18 were transcribed from search results that matched each other; mlb.com itself couldn't be loaded from the build environment. The UI always links to the official tables and says to follow league rules if they're stricter.
 * **Cut / tryout mode:** with team status `cut`, `tryout_prep` or `no_team`, the plan supplies 4 skill sessions a week, with a skills check every 2–3 weeks. The build → sharpen → peak → taper phases count down to the tryout date, and hard training is kept off tryout day and the day before.
+
+## AI study sets (Claude)
+
+* **What:** upload PDFs, images (JPG/PNG/WebP/GIF), Word (.docx), PowerPoint (.pptx) or text, and get back a study sheet, flashcards, a practice test and topics in one request (`POST /api/school/study/generate`).
+* **How:** `server/services/studyAI.ts` calls `client.beta.messages.parse` with model `claude-opus-5-5`, effort `medium` and structured outputs (`betaZodOutputFormat`), and turns on server-side refusal fallbacks (`fallbacks: "default"`). PDFs and images are sent as document and image blocks; text is extracted from .docx and .pptx locally (fflate). The output is validated and cleaned before saving: multiple-choice questions whose answer isn't a choice are dropped, true/false is normalised, and duplicates are removed.
+* **Key:** a server-wide key in `ANTHROPIC_API_KEY`, or a per-user key stored encrypted. Anthropic accounts are for adults, so for a student a parent or guardian sets this up and is billed.
+* **Privacy:** only the material and the course/assignment name are sent. Uploaded files are not stored; pasted text is saved as the student's own notes. Each generation asks for consent until the student has agreed once on that device.
+* **Academic integrity:** the prompt tells the model not to answer graded assignment questions and to make concept-level study aids instead.
+* **Cost:** the response includes token usage and an estimated cost, which the UI shows.
+* **Tests:** `tests/ai.test.ts` uses a fake generator, so no API calls are made in tests.

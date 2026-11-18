@@ -23,6 +23,7 @@ const app = createApp(db, {
   secureCookies: prod && process.env.INSECURE_COOKIES !== '1',
   encryptionKey: resolveEncryptionKey(process.env.APP_ENCRYPTION_KEY, join(dirname(dbPath), '.encryption-key')),
   canvas,
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || undefined,
 });
 
 if (prod && existsSync('dist/client/index.html')) {

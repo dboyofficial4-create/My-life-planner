@@ -292,4 +292,26 @@ CREATE TABLE flashcards (
 CREATE INDEX flashcards_user_due ON flashcards(user_id, due_date);
 `,
   },
+  {
+    id: 5,
+    name: 'practice_questions',
+    sql: `
+CREATE TABLE practice_questions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  course_id TEXT REFERENCES courses(id) ON DELETE CASCADE,
+  assignment_id TEXT REFERENCES assignments(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  topic TEXT NOT NULL DEFAULT '',
+  question TEXT NOT NULL,
+  choices TEXT NOT NULL DEFAULT '[]',
+  answer TEXT NOT NULL,
+  explanation TEXT NOT NULL DEFAULT '',
+  correct INTEGER NOT NULL DEFAULT 0,
+  wrong INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX practice_questions_user ON practice_questions(user_id, assignment_id, course_id);
+`,
+  },
 ];

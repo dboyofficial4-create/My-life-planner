@@ -24,6 +24,7 @@ interface Integration {
   unsupported: string[];
   fallback: string;
   configured: boolean;
+  serverManaged?: boolean;
   connection: null | {
     status: string;
     lastSyncAt: string | null;
@@ -216,6 +217,66 @@ function CanvasPanel({ i }: { i: Integration }) {
   );
 }
 
+/* ---------- Anthropic (AI study sets) ---------- */
+
+function AnthropicPanel({ i }: { i: Integration }) {
+  const [key, setKey] = useState('');
+  const [consent, setConsent] = useState(false);
+  const qc = useQueryClient();
+  const toast = useToast();
+  const connect = useMutation({
+    mutationFn: () => api.post('/integrations/anthropic/key', { key, consent }),
+    onSuccess: () => {
+      setKey('');
+      qc.invalidateQueries({ queryKey: ['integrations'] });
+      toast({ message: 'AI study sets are on. Use “Upload & generate” on the School page.' });
+    },
+  });
+  const disconnect = useMutation({
+    mutationFn: () => api.del('/integrations/anthropic'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['integrations'] });
+      toast({ message: 'Disconnected and the stored key deleted.' });
+    },
+  });
+  const f = fieldErrors(connect.error);
+  if (i.serverManaged) return <Callout tone="accent">AI study sets are set up on this server. Use “Upload & generate” on the School page.</Callout>;
+  if (!i.configured) return <Callout tone="warning">The server has no encryption key, so API keys can’t be stored safely.</Callout>;
+  if (i.connection) {
+    return (
+      <div className="row-wrap between">
+        <span className="small">Connected. Use <span className="strong">Upload & generate</span> on the School page.</span>
+        <Button size="sm" variant="ghost" icon={Link2Off} loading={disconnect.isPending} onClick={() => disconnect.mutate()}>Disconnect</Button>
+      </div>
+    );
+  }
+  return (
+    <form className="stack" noValidate onSubmit={(e) => { e.preventDefault(); connect.mutate(); }}>
+      <Callout tone="info" title="A parent or guardian needs to set this up">
+        Anthropic accounts are for adults (18+), and usage is billed to the account — usually a few cents per study set, more for long PDFs. Waypoint shows the estimated cost each time.
+      </Callout>
+      <details className="details">
+        <summary>How to get an API key (for the adult setting it up)</summary>
+        <ol className="small muted stack-sm" style={{ paddingLeft: 18 }}>
+          <li>Go to <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer">console.anthropic.com</a> and create an account.</li>
+          <li>Add a payment method and a small amount of credit (Billing). Setting a monthly spend limit is a good idea.</li>
+          <li>Open <span className="strong">API keys → Create key</span>, name it “Waypoint”, and copy it (it starts with <code>sk-ant-</code>).</li>
+          <li>Paste it below.</li>
+        </ol>
+      </details>
+      <Field label="Anthropic API key" hint="Stored encrypted and only sent to Anthropic." error={f.key}>
+        {(p) => <Input {...p} type="password" value={key} onChange={(e) => setKey(e.target.value)} autoComplete="off" spellCheck={false} style={{ maxWidth: 420 }} />}
+      </Field>
+      <label className="checkbox small" style={{ alignItems: 'flex-start' }}>
+        <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 2 }} />
+        <span>Use this key to send uploaded study material to Anthropic to make study sets.</span>
+      </label>
+      {connect.error && !f.key && <Callout tone="danger">{errorMessage(connect.error)}</Callout>}
+      <div><Button type="submit" variant="primary" icon={PlugZap} loading={connect.isPending} disabled={!key.trim() || !consent}>Connect</Button></div>
+    </form>
+  );
+}
+
 /* ---------- YouTube ---------- */
 
 function YouTubePanel({ i }: { i: Integration }) {
@@ -291,7 +352,7 @@ export function IntegrationsList({ module }: { module?: string }) {
         const st = STATUS[i.status];
         const conn = i.connection;
         const badge =
-          (i.id === 'canvas' || i.id === 'youtube') && conn
+          (i.id === 'canvas' || i.id === 'youtube' || i.id === 'anthropic') && conn
             ? conn.status === 'connected'
               ? <Badge tone="success" icon={CheckCircle2}>Connected</Badge>
               : <Badge tone="warning" icon={AlertTriangle}>{conn.status === 'needs_reconnect' ? 'Needs reconnecting' : 'Sync problem'}</Badge>
@@ -303,7 +364,15 @@ export function IntegrationsList({ module }: { module?: string }) {
             action={badge}
             footer={i.id === 'ics_import' && conn?.lastSyncAt ? <span className="xsmall subtle">Last used {new Date(conn.lastSyncAt).toLocaleString()}</span> : undefined}
           >
-            {i.id === 'youtube' ? (
+            {i.id === 'anthropic' ? (
+              <div className="stack-lg">
+                <AnthropicPanel i={i} />
+                <details className="details">
+                  <summary>What it does, and limits</summary>
+                  <Details i={i} />
+                </details>
+              </div>
+            ) : i.id === 'youtube' ? (
               <div className="stack-lg">
                 <YouTubePanel i={i} />
                 <details className="details">

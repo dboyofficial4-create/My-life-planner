@@ -7,6 +7,7 @@ import { body, HttpError } from '../http';
 import { INTEGRATIONS } from '../integrations/registry';
 import { parseJson } from '../db';
 import { decryptSecret, encryptSecret } from '../auth/crypto';
+import { anthropicStudyAI } from '../services/studyAI';
 import { CanvasError, canvasClient, normalizeBaseUrl, type CanvasUser } from '../integrations/canvas';
 import { CANVAS_SOURCE, syncCanvas } from '../services/canvasSync';
 import { loadContext } from '../services/context';
@@ -23,10 +24,12 @@ accountRoutes.get('/integrations', (c) => {
     integrations: INTEGRATIONS.map((def) => {
       const row = rows.get(def.id);
       const configured = def.isConfigured(c.var.config);
+      const serverManaged = def.id === 'anthropic' && !!c.var.config.anthropicApiKey;
       return {
         ...def.describe,
         id: def.id,
         configured,
+        serverManaged,
         connection: row ? { status: row.status, lastSyncAt: row.last_sync_at, lastError: row.last_error, meta: parseJson(row.meta, null) } : null,
       };
     }),
@@ -126,6 +129,17 @@ accountRoutes.delete('/integrations/:id', (c) => {
     store.deleteSourceData(CANVAS_SOURCE);
     store.markStale(startOfWeek(loadContext(store, c.var.now()).today));
   }
+  return c.json({ ok: true });
+});
+
+/* ---------- Anthropic API key (AI study sets) ---------- */
+
+accountRoutes.post('/integrations/anthropic/key', async (c) => {
+  const input = await body(c, z.object({ key: z.string().trim().min(20, 'That key looks too short').max(300).regex(/^[\x21-\x7e]+$/, 'Keys contain no spaces'), consent: z.literal(true, { error: 'Please confirm' }) }));
+  const encKey = c.var.config.encryptionKey;
+  if (!encKey) throw new HttpError(503, 'not_configured', 'The server has no encryption key, so API keys can’t be stored safely.');
+  await (c.var.config.studyAI ?? anthropicStudyAI)(input.key).validate();
+  c.var.store.upsertIntegration('anthropic', { status: 'connected', tokenEnc: encryptSecret(input.key, encKey), lastError: null, meta: { connectedAt: new Date().toISOString() } });
   return c.json({ ok: true });
 });
 

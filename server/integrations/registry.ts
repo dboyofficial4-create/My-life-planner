@@ -99,6 +99,27 @@ export const INTEGRATIONS: IntegrationDef[] = [
     },
   },
   {
+    id: 'anthropic',
+    connectable: true,
+    isConfigured: (cfg) => !!cfg.encryptionKey || !!cfg.anthropicApiKey,
+    describe: {
+      name: 'AI study sets (Claude by Anthropic)',
+      module: 'school',
+      status: 'available',
+      implemented: [
+        'Upload PDFs, photos of notes, Word docs, PowerPoint slides or text and get a study sheet, flashcards, a practice test and a topic list in one step.',
+        'Generated content is labelled “AI-generated” and based only on the material you upload.',
+        'You see the estimated cost of each study set.',
+      ],
+      requires: [
+        'An Anthropic API key. Anthropic accounts are for adults (18+), so a parent or guardian needs to create the key and is billed for usage — usually a few cents per study set, more for long PDFs.',
+        'Your key is stored encrypted and only sent to Anthropic.',
+      ],
+      unsupported: ['Doing graded homework for you — the AI makes study aids about the concepts instead.'],
+      fallback: 'Paste notes with “term: definition” lines and Waypoint makes flashcards without AI.',
+    },
+  },
+  {
     id: 'product_data',
     connectable: false,
     isConfigured: () => false,

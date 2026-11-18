@@ -11,6 +11,8 @@ import { Dialog, useToast } from '@/ui/overlay';
 import { Badge, Button, Callout, Card, EmptyState, ErrorState, Field, Input, NumberInput, PageHeader, PageSkeleton, Select, Switch, Tabs, Textarea } from '@/ui/primitives';
 import { validate, type Errors } from '@/features/forms/forms';
 import { IntegrationsList } from '@/features/settings/Integrations';
+import { AddMaterialDialog, type StudyTarget } from './AddMaterialDialog';
+import { NotebookPen } from 'lucide-react';
 
 interface Assignment {
   id: string;
@@ -59,6 +61,7 @@ export default function SchoolPage() {
   const [tab, setTab] = useState<Tab>('assignments');
   const [editing, setEditing] = useState<{ id: string | null; value: AssignmentForm } | null>(null);
   const [importing, setImporting] = useState(false);
+  const [adding, setAdding] = useState(false);
   if (q.isPending) return <PageSkeleton />;
   if (q.error) return <div className="page"><ErrorState error={q.error} onRetry={() => q.refetch()} /></div>;
   const d = q.data;
@@ -71,6 +74,7 @@ export default function SchoolPage() {
         description="Deadlines, study time and grades in one place. Study sessions are scheduled automatically before each due date."
         actions={
           <>
+            <Button size="sm" icon={NotebookPen} onClick={() => setAdding(true)}>Add study material</Button>
             <Button size="sm" icon={Upload} onClick={() => setImporting(true)}>Import calendar file</Button>
             <Button size="sm" variant="primary" icon={Plus} onClick={newAssignment}>Add assignment</Button>
           </>
@@ -78,11 +82,12 @@ export default function SchoolPage() {
       />
       <Tabs label="School sections" value={tab} onChange={setTab} tabs={[{ value: 'assignments', label: 'Assignments' }, { value: 'study', label: 'Study' }, { value: 'courses', label: 'Courses & grades' }, { value: 'connections', label: 'Connections' }]} />
       {tab === 'assignments' && <AssignmentsList d={d} onEdit={(a) => setEditing({ id: a.id, value: { courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, estimatedMinutes: a.estimatedMinutes, notes: a.notes } })} onAdd={newAssignment} />}
-      {tab === 'study' && <StudyOverview d={d} />}
+      {tab === 'study' && <StudyOverview d={d} onAdd={() => setAdding(true)} />}
       {tab === 'courses' && <Courses d={d} />}
       {tab === 'connections' && <IntegrationsList module="school" />}
       <AssignmentDialog editing={editing} courses={d.courses} onClose={() => setEditing(null)} />
       <ImportDialog open={importing} onClose={() => setImporting(false)} />
+      {adding && <AddMaterialDialog open onClose={() => setAdding(false)} targets={studyTargets(d)} />}
     </div>
   );
 }
@@ -444,11 +449,28 @@ function GradeCalculator({ c, onClose }: { c: Course; onClose: () => void }) {
 
 /* ---------- study overview ---------- */
 
-function StudyOverview({ d }: { d: SchoolData }) {
+export function studyTargets(d: SchoolData): StudyTarget[] {
+  const open = d.assignments.filter((a) => a.status === 'open' && a.dueDate >= d.today);
+  return [
+    ...open.map((a) => ({ value: `a:${a.id}`, label: `${a.title}${a.courseName ? ` — ${a.courseName}` : ''} (${relativeDay(a.dueDate, d.today)})`, group: 'assignment' as const })),
+    ...d.courses.map((c) => ({ value: `c:${c.id}`, label: c.name, group: 'course' as const })),
+  ];
+}
+
+function StudyOverview({ d, onAdd }: { d: SchoolData; onAdd: () => void }) {
   const q = useQuery({ queryKey: ['study-overview'], queryFn: () => api.get<{ totalDue: number; totalCards: number; courses: { id: string; name: string; materials: number; cards: number; due: number }[] }>('/school/study/overview') });
   const upcoming = d.assignments.filter((a) => a.status === 'open' && a.dueDate >= d.today && ['test', 'exam', 'quiz', 'essay', 'project'].includes(a.type)).slice(0, 6);
   return (
     <div className="stack-lg">
+      <Card>
+        <div className="row-wrap between">
+          <div className="stack-sm" style={{ gap: 2 }}>
+            <h2>Add your review material</h2>
+            <p className="small muted">Paste notes, a study sheet or a link and pick which test it’s for. Flashcards are made for you.</p>
+          </div>
+          <Button variant="primary" icon={NotebookPen} onClick={onAdd}>Add study material</Button>
+        </div>
+      </Card>
       <Card>
         <div className="row-wrap between">
           <div className="stack-sm" style={{ gap: 2 }}>

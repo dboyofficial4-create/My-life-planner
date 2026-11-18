@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router';
 import { ArrowLeft, BookOpen, Brain, CalendarClock, ExternalLink, FileUp, Layers, Lightbulb, Link2, ListChecks, Pencil, Plus, Sparkles, StickyNote, Trash2 } from 'lucide-react';
 import { useState, type ChangeEvent } from 'react';
 import { cardsFromNotes, topicsFromNotes, type CardDraft, type MethodId, type StudyMethod, type StudySource } from '@shared/domain/school/studyguide';
-import { api, errorMessage, fieldErrors } from '@/lib/api';
+import { api, ApiError, errorMessage, fieldErrors } from '@/lib/api';
 import { dayLabel, relativeDay, relativeDayInline, timeRange } from '@/lib/format';
 import { Dialog, useToast } from '@/ui/overlay';
 import { Badge, Button, Callout, Card, EmptyState, ErrorState, Field, Input, PageHeader, PageSkeleton, Segmented, Textarea } from '@/ui/primitives';
@@ -43,7 +43,21 @@ export default function StudyGuidePage() {
   const qs = assignmentId ? `assignmentId=${assignmentId}` : `courseId=${courseId ?? ''}`;
   const q = useQuery({ queryKey: ['study-guide', qs], queryFn: () => api.get<Guide>(`/school/study/guide?${qs}`) });
   if (q.isPending) return <PageSkeleton />;
-  if (q.error) return <div className="page"><ErrorState error={q.error} onRetry={() => q.refetch()} /></div>;
+  if (q.error) {
+    const missing = q.error instanceof ApiError && q.error.status === 404 && q.error.message === 'Not found.';
+    return (
+      <div className="page">
+        <Link to="/school" className="small row-sm" style={{ display: 'inline-flex' }}><ArrowLeft aria-hidden style={{ width: 14 }} /> School</Link>
+        {missing ? (
+          <Callout tone="danger" title="Waypoint needs a restart to show study guides">
+            The app was updated but its server is still running the old version. In the Command Prompt window running Waypoint, press Ctrl+C (answer Y), run <code>npm run dev</code>, then reload this page.
+          </Callout>
+        ) : (
+          <ErrorState error={q.error} onRetry={() => q.refetch()} />
+        )}
+      </div>
+    );
+  }
   return <GuideView g={q.data} qs={qs} />;
 }
 
@@ -87,6 +101,8 @@ function GuideView({ g, qs }: { g: Guide; qs: string }) {
         </ol>
       </Card>
 
+      <Materials g={g} />
+
       <div className="grid-2" style={{ alignItems: 'start' }}>
         <Topics g={g} />
         <div className="stack-lg">
@@ -122,7 +138,6 @@ function GuideView({ g, qs }: { g: Guide; qs: string }) {
         </div>
       </div>
 
-      <Materials g={g} />
       <Flashcards g={g} qs={qs} />
       <Methods g={g} />
     </div>

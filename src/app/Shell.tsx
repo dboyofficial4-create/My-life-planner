@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { API_VERSION } from '@shared/version';
 import { BookOpen, CalendarDays, Dumbbell, LineChart, LogOut, MoreHorizontal, Navigation, Settings, Sparkles, Sun, Utensils, type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { api } from '@/lib/api';
@@ -33,6 +34,9 @@ export function Shell() {
   const items = NAV.filter((n) => !n.modules || n.modules.some((m) => modules.includes(m as never)));
   const name = me.data?.profile?.displayName ?? '';
   const isDemo = me.data?.user.isDemo;
+  // Detect a server still running older code (e.g. after `git pull` without restarting).
+  const health = useQuery({ queryKey: ['health'], queryFn: () => api.get<{ ok: boolean; apiVersion?: number }>('/health'), refetchInterval: 60_000, staleTime: 30_000 });
+  const outdated = !!health.data && health.data.apiVersion !== API_VERSION;
 
   const logout = async () => {
     await api.post('/auth/logout');
@@ -91,6 +95,11 @@ export function Shell() {
           </div>
           <Button variant="ghost" size="sm" iconOnly icon={LogOut} aria-label="Sign out" onClick={logout} />
         </header>
+        {outdated && (
+          <div className="update-bar" role="alert">
+            <strong>Waypoint was updated — restart it to finish.</strong> In the Command Prompt window running Waypoint, press <kbd>Ctrl</kbd>+<kbd>C</kbd> (answer <kbd>Y</kbd>), run <code>npm run dev</code>, then reload this page. Until then, some features won’t work.
+          </div>
+        )}
         {isDemo && (
           <div className="demo-bar" role="note">
             <span>You’re exploring with sample demo data. It’s separate from real accounts and is deleted after 24 hours.</span>

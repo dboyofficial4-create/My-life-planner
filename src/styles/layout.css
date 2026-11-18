@@ -78,3 +78,7 @@
   .ob-top { padding: var(--s-3) var(--s-4); }
   .ob-body { padding: var(--s-6) var(--s-4) var(--s-10); }
 }
+
+.update-bar { padding: var(--s-3) var(--s-5); background: var(--danger-soft); color: var(--text); font-size: var(--text-sm); border-bottom: 1px solid var(--border); line-height: 1.6; }
+.update-bar strong { color: var(--danger); margin-right: var(--s-1); }
+.update-bar kbd, .update-bar code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85em; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 4px; padding: 0 4px; }

@@ -6,6 +6,7 @@ import { Db } from './db';
 import { HttpError } from './http';
 import { UserStore } from './repos/store';
 import { sha256 } from './auth/crypto';
+import { API_VERSION } from '../shared/version';
 import { authRoutes } from './routes/auth';
 import { onboardingRoutes } from './routes/onboarding';
 import { planRoutes } from './routes/plan';
@@ -83,7 +84,7 @@ export function createApp(db: Db, config: AppConfig) {
     await next();
   });
 
-  app.get('/api/health', (c) => c.json({ ok: true }));
+  app.get('/api/health', (c) => c.json({ ok: true, apiVersion: API_VERSION }));
   app.route('/api/auth', authRoutes);
   app.route('/api/onboarding', onboardingRoutes);
   app.route('/api', planRoutes);

@@ -755,6 +755,53 @@ export class UserStore {
     if (t) this.setTopicConfidence(t.id, confidence);
   }
 
+  /* ---------- notifications & push ---------- */
+
+  /** Insert once per key; returns true if it's new. */
+  createNotification(n: { key: string; kind: string; title: string; body: string; url: string }): boolean {
+    return this.db.run('INSERT OR IGNORE INTO notifications (id, user_id, key, kind, title, body, url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', uid(), this.userId, n.key, n.kind, n.title, n.body, n.url, Date.now()).changes > 0;
+  }
+
+  notifications(limit = 30) {
+    return this.db
+      .all<{ id: string; kind: string; title: string; body: string; url: string; created_at: number; read_at: number | null }>('SELECT id, kind, title, body, url, created_at, read_at FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT ?', this.userId, limit)
+      .map((r) => ({ id: r.id, kind: r.kind, title: r.title, body: r.body, url: r.url, createdAt: r.created_at, read: r.read_at !== null }));
+  }
+
+  unreadNotifications(): number {
+    return this.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND read_at IS NULL', this.userId)!.n;
+  }
+
+  /** Notifications created in the last `windowMs` (used by the service worker after a push). */
+  recentNotifications(windowMs: number) {
+    return this.db.all<{ key: string; title: string; body: string; url: string }>(
+      'SELECT key, title, body, url FROM notifications WHERE user_id = ? AND created_at > ? ORDER BY created_at',
+      this.userId, Date.now() - windowMs,
+    );
+  }
+
+  markNotificationsRead() {
+    this.db.run('UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL', Date.now(), this.userId);
+  }
+
+  pruneNotifications(olderThanMs: number) {
+    this.db.run('DELETE FROM notifications WHERE user_id = ? AND created_at < ?', this.userId, olderThanMs);
+  }
+
+  pushSubscriptions(): string[] {
+    return this.db.all<{ endpoint: string }>('SELECT endpoint FROM push_subscriptions WHERE user_id = ?', this.userId).map((r) => r.endpoint);
+  }
+
+  addPushSubscription(endpoint: string) {
+    // An endpoint belongs to one browser; if another account on this server registered it, it moves here.
+    this.db.run('DELETE FROM push_subscriptions WHERE endpoint = ?', endpoint);
+    this.db.run('INSERT INTO push_subscriptions (id, user_id, endpoint, created_at) VALUES (?, ?, ?, ?)', uid(), this.userId, endpoint, Date.now());
+  }
+
+  removePushSubscription(endpoint: string) {
+    this.db.run('DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint = ?', this.userId, endpoint);
+  }
+
   /* ---------- sports ---------- */
 
   addSkillTest(t: { sport: string; testId: string; date: string; value: number; note: string }): string {
@@ -835,6 +882,7 @@ export class UserStore {
       studyTopics: t('study_topics'),
       flashcards: t('flashcards'),
       practiceQuestions: t('practice_questions'),
+      notifications: t('notifications', 'kind, title, body, url, created_at, read_at'),
     };
   }
 }

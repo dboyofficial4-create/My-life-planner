@@ -42,8 +42,11 @@ planRoutes.put('/settings/:key', async (c) => {
     if (p.birthday && !pol.canSelfRegister) throw new HttpError(403, 'age_restricted', 'Waypoint isn’t available for people under 13 yet.');
   }
   store.setSetting(key, value);
-  const tz = store.getSettings().profile?.timezone ?? 'UTC';
-  invalidate(store, tz, c.var.now());
+  // Reminder preferences don't change the plan, so don't ask the user to review it.
+  if (key !== 'reminders') {
+    const tz = store.getSettings().profile?.timezone ?? 'UTC';
+    invalidate(store, tz, c.var.now());
+  }
   return c.json({ ok: true });
 });
 

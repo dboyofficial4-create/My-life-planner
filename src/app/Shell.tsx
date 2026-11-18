@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { api } from '@/lib/api';
 import { useMe } from './App';
 import { Dialog } from '@/ui/overlay';
+import { NotificationBell } from './NotificationBell';
 import { Button } from '@/ui/primitives';
 
 interface NavItem {
@@ -80,6 +81,7 @@ export function Shell() {
               {name.slice(0, 1).toUpperCase() || '?'}
             </span>
             <span className="truncate grow">{name}</span>
+            <NotificationBell />
             <Button variant="ghost" size="sm" iconOnly icon={LogOut} aria-label="Sign out" onClick={logout} />
           </div>
         </div>
@@ -93,7 +95,10 @@ export function Shell() {
             </span>
             Waypoint
           </div>
-          <Button variant="ghost" size="sm" iconOnly icon={LogOut} aria-label="Sign out" onClick={logout} />
+          <div className="row-sm">
+            <NotificationBell />
+            <Button variant="ghost" size="sm" iconOnly icon={LogOut} aria-label="Sign out" onClick={logout} />
+          </div>
         </header>
         {outdated && (
           <div className="update-bar" role="alert">

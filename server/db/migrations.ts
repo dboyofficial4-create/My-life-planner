@@ -314,4 +314,30 @@ CREATE TABLE practice_questions (
 CREATE INDEX practice_questions_user ON practice_questions(user_id, assignment_id, course_id);
 `,
   },
+  {
+    id: 6,
+    name: 'reminders',
+    sql: `
+CREATE TABLE notifications (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  key TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL DEFAULT '',
+  url TEXT NOT NULL DEFAULT '/',
+  created_at INTEGER NOT NULL,
+  delivered_at INTEGER,
+  read_at INTEGER,
+  UNIQUE (user_id, key)
+);
+CREATE INDEX notifications_user ON notifications(user_id, created_at);
+CREATE TABLE push_subscriptions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint TEXT NOT NULL UNIQUE,
+  created_at INTEGER NOT NULL
+);
+`,
+  },
 ];

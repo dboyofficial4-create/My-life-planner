@@ -9,6 +9,7 @@
 * **Export and deletion**: full JSON export; account deletion cascades to every table.
 * **Logging**: errors log only route and error type, never bodies or personal data.
 * **Secrets**: none in client code; integration tokens are encrypted server-side with `APP_ENCRYPTION_KEY`.
+* **Reminders**: push messages are empty wake-ups, so reminder text never passes through the browser's push service; reminders are kept 14 days, never sent during sleep hours, and can be turned off per type or entirely.
 * **Demo data**: separate flagged accounts that can't log in with a password and are purged after 24 hours.
 
 ## Age-dependent rules (`shared/domain/age.ts`)

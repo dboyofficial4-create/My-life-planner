@@ -4,6 +4,7 @@ dist
 data/*.db
 data/*.db-*
 data/.encryption-key
+data/.vapid-keys.json
 .env
 .env.local
 coverage

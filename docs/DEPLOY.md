@@ -31,6 +31,7 @@ New project → Deploy from GitHub repo. Set:
 | `DATABASE_PATH` | A file on the persistent disk, e.g. `/var/data/waypoint.db` |
 | `APP_ENCRYPTION_KEY` | Optional. Otherwise a key is created next to the database the first time it's needed. Back it up with the database: without it, stored integration tokens can't be decrypted. |
 | `ANTHROPIC_API_KEY` | Optional. Server-wide AI key. |
+| `VAPID_SUBJECT` | Optional, for reminders: `mailto:` an address you check (push services contact it about problems). Push keys are created next to the database (`.vapid-keys.json`); keep them on the persistent disk. |
 | Health check | `/api/health` |
 
 ## Before you invite other people

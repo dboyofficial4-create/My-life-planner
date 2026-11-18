@@ -82,3 +82,6 @@
 .update-bar { padding: var(--s-3) var(--s-5); background: var(--danger-soft); color: var(--text); font-size: var(--text-sm); border-bottom: 1px solid var(--border); line-height: 1.6; }
 .update-bar strong { color: var(--danger); margin-right: var(--s-1); }
 .update-bar kbd, .update-bar code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85em; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 4px; padding: 0 4px; }
+
+.bell { position: relative; }
+.bell[data-count]::after { content: attr(data-count); position: absolute; top: -2px; right: -2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }

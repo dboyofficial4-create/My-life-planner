@@ -19,6 +19,7 @@ import {
 } from '@/features/forms/forms';
 import { describeCommitment } from '@/features/onboarding/Onboarding';
 import { IntegrationsList } from './Integrations';
+import { RemindersSection } from './RemindersSection';
 
 const MODULE_DEFAULTS: Partial<Record<'fitness' | 'sports' | 'school' | 'nutrition' | 'skin' | 'hair', unknown>> = {
   fitness: { experience: 'some', sessionsPerWeek: 3, sessionMinutes: 45, locations: ['home'], equipment: [], accessNotes: '', limitations: [], limitationNotes: '' } satisfies FitnessPrefs,
@@ -39,6 +40,7 @@ const SECTIONS = [
   { id: 'profile', label: 'Profile' },
   { id: 'areas', label: 'Areas & goals' },
   { id: 'schedule', label: 'Schedule' },
+  { id: 'reminders', label: 'Reminders' },
   { id: 'fitness', label: 'Fitness & sports', modules: ['fitness', 'sports'] },
   { id: 'school', label: 'School', modules: ['school'] },
   { id: 'food', label: 'Food', modules: ['nutrition'] },
@@ -70,6 +72,7 @@ export default function SettingsPage() {
           {current === 'profile' && <ProfileSection s={s} />}
           {current === 'areas' && <AreasSection s={s} goals={q.data.goals} />}
           {current === 'schedule' && <ScheduleSection s={s} />}
+          {current === 'reminders' && <RemindersSection initial={s.reminders} />}
           {current === 'fitness' && <FitnessSection s={s} />}
           {current === 'school' && <SimpleSection<SchoolPrefs> title="School" settingsKey="school" initial={(s.school ?? MODULE_DEFAULTS.school) as SchoolPrefs} render={(v, on) => <SchoolForm value={v} onChange={on} />} />}
           {current === 'food' && <SimpleSection<NutritionPrefs> title="Food preferences" settingsKey="nutrition" initial={(s.nutrition ?? MODULE_DEFAULTS.nutrition) as NutritionPrefs} render={(v, on) => <NutritionForm value={v} onChange={on} />} note="To apply these to meals you’ve already planned, use “New meal plan” on the Food page." />}
@@ -317,7 +320,7 @@ function AboutSection() {
     ['Personal care', 'Working', 'Rule-based routines by product category; no product data.'],
     ['Style & wardrobe', 'Planned', 'Not available yet — nothing in the app pretends otherwise.'],
     ['AI explanations', 'Planned', 'Explanations are currently template-based. No data is sent to AI providers.'],
-    ['Notifications', 'Planned', 'No reminders are sent yet.'],
+    ['Reminders', 'Working', 'Web Push notifications (Chrome, Edge, Firefox; iPhone via Home Screen on the online version) plus the in-app bell.'],
   ];
   return (
     <Card title="What’s in this version" pad={false}>

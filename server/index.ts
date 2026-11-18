@@ -2,10 +2,12 @@ import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { existsSync, readFileSync } from 'node:fs';
 import { Db } from './db';
-import { createApp } from './app';
+import { createApp, type AppConfig } from './app';
 import { UserStore } from './repos/store';
 import { purgeExpiredDemos } from './services/demo';
 import { resolveEncryptionKey } from './auth/keys';
+import { loadOrCreateVapidKeys } from './integrations/webpush';
+import { runReminders } from './services/reminders';
 import { dirname, join } from 'node:path';
 
 // `--production` works on every OS (Windows can't set env vars inline in npm scripts).
@@ -19,17 +21,20 @@ const canvas =
     ? { clientId: process.env.CANVAS_CLIENT_ID, clientSecret: process.env.CANVAS_CLIENT_SECRET, redirectUri: process.env.CANVAS_REDIRECT_URI }
     : undefined;
 
-const app = createApp(db, {
+const appConfig: AppConfig = {
   secureCookies: prod && process.env.INSECURE_COOKIES !== '1',
   encryptionKey: resolveEncryptionKey(process.env.APP_ENCRYPTION_KEY, join(dirname(dbPath), '.encryption-key')),
   canvas,
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || undefined,
-});
+  vapid: loadOrCreateVapidKeys(join(dirname(dbPath), '.vapid-keys.json')),
+  vapidSubject: process.env.VAPID_SUBJECT || 'mailto:waypoint@example.com',
+};
+const app = createApp(db, appConfig);
 
 if (prod && existsSync('dist/client/index.html')) {
   const index = readFileSync('dist/client/index.html', 'utf8');
   app.use('/assets/*', serveStatic({ root: 'dist/client' }));
-  app.use('/favicon.svg', serveStatic({ root: 'dist/client' }));
+  for (const f of ['/favicon.svg', '/sw.js', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png']) app.use(f, serveStatic({ root: 'dist/client' }));
   app.get('*', (c) => c.html(index));
 }
 
@@ -46,5 +51,15 @@ const purge = () => {
 };
 purge();
 setInterval(purge, 60 * 60_000).unref();
+
+// Reminders: check every minute (each reminder is sent once).
+let running = false;
+setInterval(() => {
+  if (running) return;
+  running = true;
+  runReminders(db, appConfig)
+    .catch((e) => console.error(`[reminders] run failed: ${(e as Error).name}`))
+    .finally(() => { running = false; });
+}, 60_000).unref();
 
 serve({ fetch: app.fetch, port }, (info) => console.log(`[api] listening on http://localhost:${info.port}`));

@@ -14,6 +14,7 @@ import { moduleRoutes } from './routes/modules';
 import { schoolRoutes } from './routes/school';
 import { accountRoutes } from './routes/account';
 import { sportsRoutes } from './routes/sports';
+import { notificationRoutes } from './routes/notifications';
 
 export interface AppConfig {
   /** Secure cookies (HTTPS). True in production. */
@@ -25,6 +26,10 @@ export interface AppConfig {
   anthropicApiKey?: string;
   /** AI study-set generator factory (overridden in tests). */
   studyAI?: import('./services/studyAI').StudyAIFactory;
+  /** Web Push (reminders). Created on first start next to the database. */
+  vapid?: import('./integrations/webpush').VapidKeys;
+  /** Contact for push services, e.g. mailto:you@example.com (VAPID_SUBJECT). */
+  vapidSubject?: string;
   /** fetch override for tests (external API calls). */
   fetch?: typeof fetch;
   /** Clock override for tests. */
@@ -98,6 +103,7 @@ export function createApp(db: Db, config: AppConfig) {
   app.route('/api', moduleRoutes);
   app.route('/api/school', schoolRoutes);
   app.route('/api', sportsRoutes);
+  app.route('/api', notificationRoutes);
   app.route('/api', accountRoutes);
   app.all('/api/*', () => {
     throw new HttpError(404, 'not_found', 'Not found.');

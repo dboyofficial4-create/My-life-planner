@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isLocalDate, isValidTimeZone, hhmmToMin } from '../domain/time';
+import { ReminderSettingsSchema, type ReminderSettings } from '../domain/reminders';
 
 export { isLocalDate };
 
@@ -292,6 +293,7 @@ export const SETTINGS_SCHEMAS = {
   nutrition: NutritionSchema,
   skin: SkinSchema,
   hair: HairSchema,
+  reminders: ReminderSettingsSchema,
 } as const;
 export type SettingsKey = keyof typeof SETTINGS_SCHEMAS;
 export interface SettingsBundle {
@@ -303,6 +305,7 @@ export interface SettingsBundle {
   nutrition?: NutritionPrefs;
   skin?: SkinPrefs;
   hair?: HairPrefs;
+  reminders?: ReminderSettings;
 }
 
 /* ---------- auth ---------- */

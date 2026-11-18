@@ -6,6 +6,7 @@
 | Canvas LMS | **Working (personal access token)** | Connect with a token the student creates in Canvas; imports active courses, assignments (due from 30 days ago on), submission status, assignment groups + weights, scores and Canvas's current grade; re-sync updates in place; disconnect with optional data removal | Your school must allow students to create access tokens. School-wide OAuth (Developer Key) is **not** implemented | .ics import, manual entry |
 | Home Access Center | **Not supported** | Nothing | A district-approved data-sharing method; HAC has no universal public API | Manual grades with confirmed/unconfirmed weights |
 | YouTube (vetted channels) | **Working (your API key)** | Video search for your focus skills, restricted by channel id to vetted channels (governing bodies + established coaching channels); channel names verified at runtime; safe search on; cached 7 days | A free YouTube Data API v3 key | Links to the vetted channels + written resources |
+| Reminders (Web Push) | **Working** | Reminders before activities, deadline warnings (3 days / evening before / morning of), morning summary, flashcards due, missed-session nudges; never during sleep hours; also listed under the in-app bell | A browser that supports Web Push (Chrome, Edge, Firefox; Safari on iPhone/iPad only when added to the Home Screen from the online https version). Notifications arrive while the browser is running | In-app bell |
 | Product / price data | Planned | Category-level care guidance | A licensed product data provider | No prices, stock, reviews or links are shown |
 
 Policies: Waypoint never asks for school passwords and never scrapes restricted systems. `GET /api/integrations` returns this information and the UI renders it verbatim.
@@ -38,3 +39,11 @@ Policies: Waypoint never asks for school passwords and never scrapes restricted 
 * **Academic integrity:** the prompt tells the model not to answer graded assignment questions and to make concept-level study aids instead.
 * **Cost:** the response includes token usage and an estimated cost, which the UI shows.
 * **Tests:** `tests/ai.test.ts` uses a fake generator, so no API calls are made in tests.
+
+## Reminders (Web Push)
+
+* The server checks every minute (`server/services/reminders.ts`) using pure rules in `shared/domain/reminders.ts`. Each reminder has a unique key, so it is stored and sent at most once.
+* Push messages carry **no content**: the push service (Google, Mozilla, Microsoft or Apple) only receives an empty, VAPID-signed wake-up. The service worker (`public/sw.js`) then fetches the text from `/api/notifications/recent` with the user's own cookie.
+* Push endpoints are limited to the known browser push services. Expired subscriptions (404/410) are removed automatically.
+* VAPID keys are created on first run at `data/.vapid-keys.json`. If they change, devices must turn notifications on again.
+* Not verified here: delivery through real push services. Use Settings → Reminders → *Send a test reminder*.

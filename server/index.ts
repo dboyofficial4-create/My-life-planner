@@ -10,6 +10,14 @@ import { loadOrCreateVapidKeys } from './integrations/webpush';
 import { runReminders } from './services/reminders';
 import { dirname, join } from 'node:path';
 
+// Settings from a .env file next to package.json (ANTHROPIC_API_KEY, PORT, …), if there is one.
+// Values already set in the environment win. Node 20.12+ reads the file itself; no extra package.
+try {
+  process.loadEnvFile('.env');
+} catch (e) {
+  if ((e as NodeJS.ErrnoException).code !== 'ENOENT') console.error(`[env] couldn’t read .env: ${(e as Error).message}`);
+}
+
 // `--production` works on every OS (Windows can't set env vars inline in npm scripts).
 const prod = process.env.NODE_ENV === 'production' || process.argv.includes('--production');
 const port = Number(process.env.PORT ?? 8787);

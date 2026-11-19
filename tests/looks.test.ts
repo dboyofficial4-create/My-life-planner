@@ -109,3 +109,49 @@ describe('skin finder and build planner', () => {
     expect((await b.post('/api/looks/build', buildInput({ goals: [] }))).status).toBe(422);
   });
 });
+
+describe('Gemini as the AI', () => {
+  it('is used when there is no Anthropic key, and says so to the app', async () => {
+    const { calls, app } = (() => {
+      const calls: string[] = [];
+      const fake: LookAIFactory = (key) => ({
+        async skin() { calls.push(key); return skinResult(); },
+        async build() { calls.push(key); return buildResult(); },
+      });
+      const db = new Db(':memory:');
+      return { calls, app: createApp(db, { secureCookies: false, now: () => NOW, encryptionKey: randomBytes(32).toString('base64'), lookAI: fake, geminiApiKey: 'gemini-key' }) };
+    })();
+    const a = await user(app, '2000-01-01');
+    expect((await a.get('/api/looks/skin')).json).toMatchObject({ aiReady: true, provider: 'gemini' });
+    expect((await a.post('/api/looks/skin', skinInput())).status).toBe(201);
+    expect(calls).toEqual(['gemini-key']);
+  });
+
+  it('sends photos and the brief to Gemini and validates its JSON', async () => {
+    const { geminiLookAI, jsonSchema } = await import('../server/services/geminiLookAI');
+    const { SkinAdviceSchema } = await import('../shared/schemas/looks');
+    const schema = jsonSchema(SkinAdviceSchema);
+    expect(schema).not.toHaveProperty('$schema');
+    expect(schema).toMatchObject({ type: 'object' });
+
+    const realFetch = globalThis.fetch;
+    let sent: any = null;
+    globalThis.fetch = (async (_url: unknown, init: any) => {
+      sent = JSON.parse(init.body);
+      return new Response(JSON.stringify({ candidates: [{ content: { role: 'model', parts: [{ text: JSON.stringify(skinResult()) }] }, finishReason: 'STOP' }] }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }) as typeof fetch;
+    try {
+      const out = await geminiLookAI('test-key').skin([PHOTO], 'Age: 25 (adult).');
+      expect(out.summary).toBe('Mostly balanced skin with some shine.');
+      const parts = sent.contents[0].parts;
+      expect(parts.some((p: any) => p.inlineData?.mimeType === 'image/jpeg')).toBe(true);
+      expect(parts.at(-1).text).toContain('Age: 25');
+      expect(JSON.stringify(sent)).toContain('Never comment on attractiveness');
+
+      globalThis.fetch = (async () => new Response(JSON.stringify({ error: { code: 429, message: 'Resource exhausted', status: 'RESOURCE_EXHAUSTED' } }), { status: 429, headers: { 'content-type': 'application/json' } })) as typeof fetch;
+      await expect(geminiLookAI('test-key').skin([], 'x')).rejects.toMatchObject({ status: 429 });
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});

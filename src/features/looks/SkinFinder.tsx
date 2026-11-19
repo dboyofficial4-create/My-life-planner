@@ -5,9 +5,9 @@ import { SKIN_CONCERN_LABELS, SKIN_CONCERNS, SKIN_TYPES, type LookReport, type S
 import { api, errorMessage } from '@/lib/api';
 import { useToast } from '@/ui/overlay';
 import { Badge, Button, Callout, Card, Chips, Field, Input, Skeleton, Textarea } from '@/ui/primitives';
-import { AiNotReady, PhotoPrivacy, PhotoSlot, UnderEighteen, when, type PickedPhoto } from './shared';
+import { AiNotReady, consentText, PhotoPrivacy, PhotoSlot, UnderEighteen, when, type PickedPhoto, type Provider } from './shared';
 
-type Info = { report: LookReport<SkinAdvice> | null; photosAllowed: boolean; aiReady: boolean };
+type Info = { provider: Provider; report: LookReport<SkinAdvice> | null; photosAllowed: boolean; aiReady: boolean };
 const TYPE_LABELS: Record<(typeof SKIN_TYPES)[number], string> = { oily: 'Oily', dry: 'Dry', combination: 'Combination', normal: 'Normal', sensitive: 'Sensitive', not_sure: 'Not sure' };
 
 export function SkinFinder() {
@@ -19,12 +19,12 @@ export function SkinFinder() {
   return (
     <section className="stack" aria-labelledby="skin-finder-h">
       <h2 id="skin-finder-h" className="row-sm"><Sparkles aria-hidden style={{ width: 18 }} /> Product finder</h2>
-      {!d.aiReady ? <AiNotReady /> : d.report && !editing ? <SkinResult r={d.report} onAgain={() => setEditing(true)} /> : <SkinForm photosAllowed={d.photosAllowed} onDone={() => setEditing(false)} />}
+      {!d.aiReady ? <AiNotReady /> : d.report && !editing ? <SkinResult r={d.report} onAgain={() => setEditing(true)} /> : <SkinForm photosAllowed={d.photosAllowed} provider={d.provider} onDone={() => setEditing(false)} />}
     </section>
   );
 }
 
-function SkinForm({ photosAllowed, onDone }: { photosAllowed: boolean; onDone: () => void }) {
+function SkinForm({ photosAllowed, provider, onDone }: { photosAllowed: boolean; provider: Provider; onDone: () => void }) {
   const qc = useQueryClient();
   const toast = useToast();
   const [photos, setPhotos] = useState<(PickedPhoto | null)[]>([null, null, null]);
@@ -50,7 +50,7 @@ function SkinForm({ photosAllowed, onDone }: { photosAllowed: boolean; onDone: (
                 <PhotoSlot key={i} label={['Front', 'Left side', 'Right side'][i]!} hint={i === 0 ? 'Daylight, no filter, no makeup' : 'Optional'} capture="user" value={p} onChange={(v) => setPhotos((all) => all.map((x, j) => (j === i ? v : x)))} />
               ))}
             </div>
-            <PhotoPrivacy photosAllowed />
+            <PhotoPrivacy photosAllowed provider={provider} />
           </div>
         ) : (
           <UnderEighteen what="routine" />
@@ -62,7 +62,7 @@ function SkinForm({ photosAllowed, onDone }: { photosAllowed: boolean; onDone: (
         <Field label="Anything else?" optional>{(p) => <Textarea {...p} rows={2} value={notes} maxLength={500} placeholder="e.g. breakouts get worse before games" onChange={(e) => setNotes(e.target.value)} />}</Field>
         <label className="checkbox">
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-          <span className="small">Send {photosAllowed && photos.some(Boolean) ? 'these photos and answers' : 'these answers'} to the AI service (Anthropic) to make my routine.</span>
+          <span className="small">{consentText(provider, photosAllowed && photos.some(Boolean), 'routine')}</span>
         </label>
         <div className="row-wrap">
           <Button type="submit" variant="primary" icon={Sparkles} loading={go.isPending} disabled={!consent}>{go.isPending ? 'Looking… (about 30 seconds)' : 'Find my products'}</Button>

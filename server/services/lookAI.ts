@@ -1,5 +1,5 @@
 /**
- * Skin product finder and build planner (Claude via the Anthropic API).
+ * Skin product finder and build planner (Claude via the Anthropic API; Gemini in geminiLookAI.ts).
  *
  * Privacy: photos (adults only) and the student's answers are sent once and never stored;
  * only the written result is saved. No name, email or other account data is sent.
@@ -25,7 +25,7 @@ const COMMON = `Ground rules (always):
 - If a photo is not a real photo of what was asked for, is too blurry or dark to use, shows nudity or underwear, or seems to be of someone other than the user (for example a child when the user is an adult), set usable to false, explain why in usableReason in one kind sentence, and leave the other fields as short or empty as the schema allows. If no photos were sent, work from the answers and set usable to true.
 - Write in plain, friendly language a teenager understands. No jargon without a short explanation.`;
 
-const SKIN = `You help a student build a simple, affordable skin-care routine.
+export const SKIN_PROMPT = `You help a student build a simple, affordable skin-care routine.
 ${COMMON}
 - Describe what you can see (or what they told you) in neutral, factual terms ("some small bumps on the forehead", "shine on the nose"), never as flaws.
 - Routine: morning and evening steps in the order they are used, 2 to 4 steps each (fewer is better for beginners). For each step give the product type, the ingredients to look for and avoid, why it helps, and one or two widely available drugstore examples that fit their budget, written as examples, not endorsements.
@@ -35,7 +35,7 @@ ${COMMON}
 - weekly: optional once-a-week extras (can be empty). habits: 3 to 5 everyday habits (washing pillowcases, not picking, etc.).
 - seeADoctorIf: concrete warning signs (painful deep cysts, scarring, a mole that changes, a rash that spreads, anything that bleeds or won't heal). Advice here is general, not a diagnosis.`;
 
-const BUILD = `You help a student plan training toward the physique or athletic build they want.
+export const BUILD_PROMPT = `You help a student plan training toward the physique or athletic build they want.
 ${COMMON}
 - Photos, when sent, are labelled "current" and "goal". Compare them only in training terms, body area by body area (shoulders, arms, chest, back, core, legs, posture): what is developed now, what the goal shows, and what to focus on.
 - Be honest about what is realistic: genetics, height and frame can't be trained; goal photos are often of professional athletes, posed, pumped, lit and edited. Give a realistic timeline in months for noticeable change with consistent training, and say plainly when a goal will take years.
@@ -83,8 +83,8 @@ export const anthropicLookAI: LookAIFactory = (apiKey) => {
     return response.parsed_output as T;
   }
   return {
-    skin: (photos, brief) => ask(SKIN, SkinAdviceSchema, photos.map((photo, i) => ({ label: `face ${i + 1}`, photo })), brief),
-    build: (photos, brief) => ask(BUILD, BuildPlanSchema, photos, brief),
+    skin: (photos, brief) => ask(SKIN_PROMPT, SkinAdviceSchema, photos.map((photo, i) => ({ label: `face ${i + 1}`, photo })), brief),
+    build: (photos, brief) => ask(BUILD_PROMPT, BuildPlanSchema, photos, brief),
   };
 };
 

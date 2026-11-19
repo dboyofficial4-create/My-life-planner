@@ -2,7 +2,7 @@
 
 ## Implemented
 
-* **Data minimisation**: onboarding only asks about the areas the user chooses; settings for unselected modules are discarded. Height and weight are optional. Photos are only used by the skin product finder and build planner, only for adults (18+), only after the user ticks a consent box; they are shrunk and stripped of EXIF/GPS data in the browser, sent once to Anthropic, and never stored (only the written result is). Under 18 the same tools work from answers alone.
+* **Data minimisation**: onboarding only asks about the areas the user chooses; settings for unselected modules are discarded. Height and weight are optional. Photos are only used by the skin product finder and build planner, only for adults (18+), only after the user ticks a consent box; they are shrunk and stripped of EXIF/GPS data in the browser, sent once to the configured AI (Anthropic, or Google Gemini when only GEMINI_API_KEY is set), and never stored by Waypoint (only the written result is). On Gemini's free tier Google may retain and review submissions; the consent text says this. Under 18 the same tools work from answers alone.
 * **Auth**: scrypt password hashes; random 256-bit session tokens stored as SHA-256 hashes; HttpOnly, SameSite=Lax cookies (Secure in production); 30-day expiry; rate-limited login, registration and demo creation.
 * **CSRF**: writes must be JSON (except DELETE) and same-origin by the `Origin` header.
 * **Isolation**: every query is user-scoped through `UserStore`, covered by tests.

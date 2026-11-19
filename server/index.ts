@@ -34,6 +34,7 @@ const appConfig: AppConfig = {
   encryptionKey: resolveEncryptionKey(process.env.APP_ENCRYPTION_KEY, join(dirname(dbPath), '.encryption-key')),
   canvas,
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || undefined,
+  geminiApiKey: process.env.GEMINI_API_KEY || undefined,
   vapid: loadOrCreateVapidKeys(join(dirname(dbPath), '.vapid-keys.json')),
   vapidSubject: process.env.VAPID_SUBJECT || 'mailto:waypoint@example.com',
 };

@@ -5,6 +5,7 @@ import { EQUIPMENT_LABELS } from '../../shared/schemas';
 import { BUILD_GOAL_LABELS, BuildPlanInput, SKIN_CONCERN_LABELS, SkinAdviceInput } from '../../shared/schemas/looks';
 import { loadContext } from '../services/context';
 import { anthropicLookAI, sanitizeBuild, sanitizeSkin } from '../services/lookAI';
+import { geminiLookAI } from '../services/geminiLookAI';
 import { aiKeyFor } from './study';
 
 export const lookRoutes = new Hono<AppEnv>();
@@ -17,7 +18,8 @@ const kindOf = (k: string) => {
 lookRoutes.get('/looks/:kind', (c) => {
   const kind = kindOf(c.req.param('kind'));
   const ctx = loadContext(c.var.store, c.var.now());
-  return c.json({ report: c.var.store.latestLookReport(kind), photosAllowed: ctx.policy.allowAppearancePhotos, aiReady: !!aiKeyFor(c) });
+  const p = provider(c);
+  return c.json({ report: c.var.store.latestLookReport(kind), photosAllowed: ctx.policy.allowAppearancePhotos, aiReady: !!p, provider: p?.name ?? null });
 });
 
 lookRoutes.delete('/looks/:kind', (c) => {
@@ -25,10 +27,18 @@ lookRoutes.delete('/looks/:kind', (c) => {
   return c.json({ ok: true });
 });
 
-function requireKey(c: Parameters<typeof aiKeyFor>[0]) {
-  const key = aiKeyFor(c);
-  if (!key) throw new HttpError(409, 'ai_not_connected', 'Add an Anthropic API key in Settings → Connections to use this.');
-  return key;
+/** Which AI to use: Claude when there is an Anthropic key (the server's or the user's), else Gemini from GEMINI_API_KEY. */
+function provider(c: Parameters<typeof aiKeyFor>[0]): { name: 'claude' | 'gemini'; key: string } | null {
+  const anthropic = aiKeyFor(c);
+  if (anthropic) return { name: 'claude', key: anthropic };
+  if (c.var.config.geminiApiKey) return { name: 'gemini', key: c.var.config.geminiApiKey };
+  return null;
+}
+
+function lookAI(c: Parameters<typeof aiKeyFor>[0]) {
+  const p = provider(c);
+  if (!p) throw new HttpError(409, 'ai_not_connected', 'Add an AI key to use this: ANTHROPIC_API_KEY or GEMINI_API_KEY in the .env file, or an Anthropic key in Settings → Connections.');
+  return (c.var.config.lookAI ?? (p.name === 'gemini' ? geminiLookAI : anthropicLookAI))(p.key);
 }
 
 const ageLine = (age: number | null, band: string) => (band === 'adult' ? `Age: ${age ?? 'adult'} (adult).` : `Age: ${age ?? 'unknown'}; treat as UNDER 18.`);
@@ -51,7 +61,7 @@ lookRoutes.post('/looks/skin', async (c) => {
     input.notes ? `Notes: ${input.notes}` : null,
     input.photos.length ? `${input.photos.length} face photo(s) are attached.` : 'No photos: work from these answers.',
   ].filter(Boolean).join('\n');
-  const ai = (c.var.config.lookAI ?? anthropicLookAI)(requireKey(c));
+  const ai = lookAI(c);
   const result = sanitizeSkin(await ai.skin(input.photos, brief));
   if (!result.usable) throw new HttpError(422, 'photo_unusable', result.usableReason || 'Those photos couldn’t be used. Try a clear, well-lit photo of your face, or answer the questions without photos.');
   return c.json({ report: c.var.store.saveLookReport('skin', input.photos.length > 0, result) }, 201);
@@ -85,7 +95,7 @@ lookRoutes.post('/looks/build', async (c) => {
     ...(input.currentPhoto ? [{ label: 'current (the user now)', photo: input.currentPhoto }] : []),
     ...(input.goalPhoto ? [{ label: 'goal (the build they want)', photo: input.goalPhoto }] : []),
   ];
-  const ai = (c.var.config.lookAI ?? anthropicLookAI)(requireKey(c));
+  const ai = lookAI(c);
   const result = sanitizeBuild(await ai.build(photos, brief));
   if (!result.usable) throw new HttpError(422, 'photo_unusable', result.usableReason || 'Those photos couldn’t be used. Try clear photos in athletic clothes, or answer the questions without photos.');
   if (ctx.policy.band !== 'adult') {

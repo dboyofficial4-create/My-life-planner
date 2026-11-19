@@ -50,8 +50,8 @@ Policies: Waypoint never asks for school passwords and never scrapes restricted 
 
 ## Skin product finder and build planner (Claude)
 
-* Same Anthropic key as AI study sets (server-wide `ANTHROPIC_API_KEY`, or the user's own key in Settings → Connections).
+* Same Anthropic key as AI study sets (server-wide `ANTHROPIC_API_KEY`, or the user's own key in Settings → Connections). Without one, `GEMINI_API_KEY` (Google AI Studio, free tier available) is used instead, model `gemini-flash-latest`, with the same instructions, schema and checks. On Gemini's free tier Google may use submitted content, including photos, to improve its products; the consent line names Google and says so.
 * Personal Care → Product finder: a morning/evening routine with product types, ingredients to look for and avoid, and common drugstore examples (examples, not endorsements; no prices or stock).
 * Fitness & Sports → Build planner: training-relevant comparison, honest timeline, a weekly plan from the user's equipment, schedule, limitations and sport.
 * Photos: adults only (`AgePolicy.allowAppearancePhotos`), never stored. Everyone else uses the questions.
-* Not verified here: responses from the real model (tests use a stand-in).
+* Not verified here: responses from the real models (tests use a stand-in, and a faked Gemini HTTP response).

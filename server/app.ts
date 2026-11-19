@@ -25,6 +25,8 @@ export interface AppConfig {
   canvas?: { clientId: string; clientSecret: string; redirectUri: string };
   /** Server-wide Anthropic API key (ANTHROPIC_API_KEY). If unset, users can add their own in Settings → Connections. */
   anthropicApiKey?: string;
+  /** Used by the skin finder and build planner when there is no Anthropic key. */
+  geminiApiKey?: string;
   /** AI study-set generator factory (overridden in tests). */
   studyAI?: import('./services/studyAI').StudyAIFactory;
   lookAI?: import('./services/lookAI').LookAIFactory;

@@ -5,9 +5,9 @@ import { BUILD_GOAL_LABELS, BUILD_GOALS, type BuildPlan, type LookReport } from 
 import { api, errorMessage } from '@/lib/api';
 import { useToast } from '@/ui/overlay';
 import { Button, Callout, Card, Chips, Field, Skeleton, Textarea } from '@/ui/primitives';
-import { AiNotReady, PhotoPrivacy, PhotoSlot, UnderEighteen, when, type PickedPhoto } from './shared';
+import { AiNotReady, consentText, PhotoPrivacy, PhotoSlot, UnderEighteen, when, type PickedPhoto, type Provider } from './shared';
 
-type Info = { report: LookReport<BuildPlan> | null; photosAllowed: boolean; aiReady: boolean };
+type Info = { provider: Provider; report: LookReport<BuildPlan> | null; photosAllowed: boolean; aiReady: boolean };
 
 export function BuildPlanner() {
   const q = useQuery({ queryKey: ['looks', 'build'], queryFn: () => api.get<Info>('/looks/build') });
@@ -16,10 +16,10 @@ export function BuildPlanner() {
   if (q.error) return <Callout tone="danger">{errorMessage(q.error)}</Callout>;
   const d = q.data;
   if (!d.aiReady) return <AiNotReady />;
-  return d.report && !editing ? <BuildResult r={d.report} onAgain={() => setEditing(true)} /> : <BuildForm photosAllowed={d.photosAllowed} onDone={() => setEditing(false)} />;
+  return d.report && !editing ? <BuildResult r={d.report} onAgain={() => setEditing(true)} /> : <BuildForm photosAllowed={d.photosAllowed} provider={d.provider} onDone={() => setEditing(false)} />;
 }
 
-function BuildForm({ photosAllowed, onDone }: { photosAllowed: boolean; onDone: () => void }) {
+function BuildForm({ photosAllowed, provider, onDone }: { photosAllowed: boolean; provider: Provider; onDone: () => void }) {
   const qc = useQueryClient();
   const toast = useToast();
   const [current, setCurrent] = useState<PickedPhoto | null>(null);
@@ -44,7 +44,7 @@ function BuildForm({ photosAllowed, onDone }: { photosAllowed: boolean; onDone: 
               <PhotoSlot label="You now" hint="Fitted athletic clothes, front-on, good light" capture="environment" value={current} onChange={setCurrent} />
               <PhotoSlot label="The build you want" hint="Any photo of the look you’re aiming for" value={goal} onChange={setGoal} />
             </div>
-            <PhotoPrivacy photosAllowed />
+            <PhotoPrivacy photosAllowed provider={provider} />
           </div>
         ) : (
           <UnderEighteen what="plan" />
@@ -53,7 +53,7 @@ function BuildForm({ photosAllowed, onDone }: { photosAllowed: boolean; onDone: 
         <Field label="Describe it in your words" optional>{(p) => <Textarea {...p} rows={2} value={description} maxLength={600} placeholder="e.g. a point guard’s build: quick, strong legs, more shoulder muscle" onChange={(e) => setDescription(e.target.value)} />}</Field>
         <label className="checkbox">
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-          <span className="small">Send {photosAllowed && (current || goal) ? 'these photos and answers' : 'these answers'} to the AI service (Anthropic) to make my plan.</span>
+          <span className="small">{consentText(provider, photosAllowed && !!(current || goal), 'plan')}</span>
         </label>
         <div className="row-wrap">
           <Button type="submit" variant="primary" icon={Target} loading={go.isPending} disabled={!consent || !ready}>{go.isPending ? 'Planning… (about 30 seconds)' : 'Make my plan'}</Button>

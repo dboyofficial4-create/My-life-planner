@@ -52,19 +52,31 @@ export function PhotoSlot({ label, hint, value, onChange, capture }: { label: st
   );
 }
 
+export type Provider = 'claude' | 'gemini' | null;
+
 export function AiNotReady() {
   return (
-    <Callout tone="info" title="Connect the AI first" icon={KeyRound} action={<Link to="/settings/connections" className="btn btn-sm btn-primary">Open Connections</Link>}>
-      This uses Claude, the same AI as the study-set generator. Add an Anthropic API key in Settings → Connections.
+    <Callout tone="info" title="Connect an AI first" icon={KeyRound} action={<Link to="/settings/connections" className="btn btn-sm btn-primary">Open Connections</Link>}>
+      Add an Anthropic key in Settings → Connections, or put <code>ANTHROPIC_API_KEY</code> or <code>GEMINI_API_KEY</code> in Waypoint’s <code>.env</code> file and restart it.
     </Callout>
   );
 }
 
-export function PhotoPrivacy({ photosAllowed }: { photosAllowed: boolean }) {
+/** Who receives the answers and photos, named in the consent line. */
+export function consentText(provider: Provider, withPhotos: boolean, purpose: string) {
+  const what = withPhotos ? 'these photos and answers' : 'these answers';
+  return provider === 'gemini'
+    ? `Send ${what} to Google’s Gemini AI to make my ${purpose}. On Gemini’s free tier, Google may use what’s sent, including photos, to improve its products.`
+    : `Send ${what} to the AI service (Anthropic) to make my ${purpose}.`;
+}
+
+export function PhotoPrivacy({ photosAllowed, provider }: { photosAllowed: boolean; provider: Provider }) {
   return photosAllowed ? (
     <p className="xsmall subtle row-sm" style={{ alignItems: 'flex-start' }}>
       <Lock aria-hidden style={{ width: 14, flex: 'none', marginTop: 2 }} />
-      Photos are shrunk on your device, sent once to the AI service (Anthropic) and never stored. Only the written result is saved.
+      {provider === 'gemini'
+        ? 'Photos are shrunk on your device and sent once to Google Gemini; Waypoint never stores them, but on the free tier Google may keep and review what it receives. Only the written result is saved here.'
+        : 'Photos are shrunk on your device, sent once to the AI service (Anthropic) and never stored. Only the written result is saved.'}
     </p>
   ) : null;
 }

@@ -303,3 +303,17 @@ describe('demo & account', () => {
     }
   });
 });
+
+describe('goals', () => {
+  it('finishes setup with every goal offered for the chosen areas (more than 12)', async () => {
+    const { GOAL_KINDS, GOAL_LABELS } = await import('../shared/schemas');
+    const modules = ['fitness', 'school', 'nutrition'] as const;
+    const goals = modules.flatMap((m) => GOAL_KINDS[m].map((kind) => ({ module: m, kind, title: GOAL_LABELS[kind] ?? kind, targetDate: null })))
+      .map((g, i) => ({ ...g, priority: i + 1 }));
+    expect(goals.length).toBeGreaterThan(12);
+    const c = await newUser('many-goals@example.com', { goals });
+    // editing goals later in Settings takes the same number
+    const saved = await c.put('/api/goals', goals);
+    expect(saved.status, JSON.stringify(saved.json)).toBe(200);
+  });
+});

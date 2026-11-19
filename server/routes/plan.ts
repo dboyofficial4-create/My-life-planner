@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
 import { body, HttpError } from '../http';
-import { CommitmentInput, GoalSchema, ItemUpdateInput, SETTINGS_SCHEMAS, localDate, type SettingsKey } from '../../shared/schemas';
+import { CommitmentInput, GoalSchema, ItemUpdateInput, MAX_GOALS, SETTINGS_SCHEMAS, localDate, type SettingsKey } from '../../shared/schemas';
 import { addDays, hhmmToMin, isLocalDate as isDate, startOfWeek, todayIn } from '../../shared/domain/time';
 import { conflictsFor } from '../../shared/domain/planner/engine';
 import { awakeWindow } from '../../shared/domain/planner/build';
@@ -51,7 +51,7 @@ planRoutes.put('/settings/:key', async (c) => {
 });
 
 planRoutes.put('/goals', async (c) => {
-  const goals = await body(c, z.array(GoalSchema.omit({ id: true })).max(12));
+  const goals = await body(c, z.array(GoalSchema.omit({ id: true })).max(MAX_GOALS));
   const store = c.var.store;
   const ctx = loadContext(store, c.var.now());
   if (goals.some((g) => g.kind === 'body_composition') && !ctx.policy.allowWeightLossGoal) {

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import {
-  ASSIGNMENT_TYPES, CommitmentInput, CourseInput, FitnessSchema, GoalSchema, HairSchema, NutritionSchema, ProfileSchema,
+  ASSIGNMENT_TYPES, CommitmentInput, CourseInput, FitnessSchema, GoalSchema, HairSchema, MAX_GOALS, NutritionSchema, ProfileSchema,
   ScheduleSchema, SchoolSchema, SkinSchema, SportsSchema, hhmm, localDate, weekday,
 } from './index';
 
@@ -21,7 +21,7 @@ export const AssessmentInput = z.object({
 
 export const OnboardingComplete = z.object({
   profile: ProfileSchema,
-  goals: z.array(GoalSchema.omit({ id: true })).max(12),
+  goals: z.array(GoalSchema.omit({ id: true })).max(MAX_GOALS),
   schedule: ScheduleSchema,
   schoolHours: HoursBlock,
   workHours: HoursBlock,

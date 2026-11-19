@@ -50,6 +50,9 @@ export const GOAL_KINDS = {
   style: ['better_outfits'],
 } as const satisfies Record<ModuleId, readonly string[]>;
 
+/** Every goal the forms offer can be chosen at once (one per kind and area). */
+export const MAX_GOALS = Object.values(GOAL_KINDS).reduce((n, kinds) => n + kinds.length, 0);
+
 export const GOAL_LABELS: Record<string, string> = {
   general_fitness: 'Get generally fitter',
   strength: 'Build strength',

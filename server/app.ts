@@ -15,6 +15,7 @@ import { schoolRoutes } from './routes/school';
 import { accountRoutes } from './routes/account';
 import { sportsRoutes } from './routes/sports';
 import { notificationRoutes } from './routes/notifications';
+import { lookRoutes } from './routes/looks';
 
 export interface AppConfig {
   /** Secure cookies (HTTPS). True in production. */
@@ -26,6 +27,7 @@ export interface AppConfig {
   anthropicApiKey?: string;
   /** AI study-set generator factory (overridden in tests). */
   studyAI?: import('./services/studyAI').StudyAIFactory;
+  lookAI?: import('./services/lookAI').LookAIFactory;
   /** Web Push (reminders). Created on first start next to the database. */
   vapid?: import('./integrations/webpush').VapidKeys;
   /** Contact for push services, e.g. mailto:you@example.com (VAPID_SUBJECT). */
@@ -59,7 +61,10 @@ export function createApp(db: Db, config: AppConfig) {
   // Study-material uploads may carry files (base64); everything else stays small.
   const uploadLimit = bodyLimit({ maxSize: 30 * 1024 * 1024, onError: () => { throw new HttpError(413, 'too_large', 'Files are too large together (20 MB max).'); } });
   const defaultLimit = bodyLimit({ maxSize: 512 * 1024, onError: () => { throw new HttpError(413, 'too_large', 'That upload is too large.'); } });
-  app.use('/api/*', (c, next) => (c.req.path === '/api/school/study/generate' ? uploadLimit(c, next) : defaultLimit(c, next)));
+  const photoLimit = bodyLimit({ maxSize: 14 * 1024 * 1024, onError: () => { throw new HttpError(413, 'too_large', 'Those photos are too large. Try smaller photos.'); } });
+  app.use('/api/*', (c, next) =>
+    c.req.path === '/api/school/study/generate' ? uploadLimit(c, next) : c.req.method === 'POST' && /^\/api\/looks\/(skin|build)$/.test(c.req.path) ? photoLimit(c, next) : defaultLimit(c, next),
+  );
   app.use('/api/*', async (c, next) => {
     c.set('db', db);
     c.set('config', config);
@@ -104,6 +109,7 @@ export function createApp(db: Db, config: AppConfig) {
   app.route('/api/school', schoolRoutes);
   app.route('/api', sportsRoutes);
   app.route('/api', notificationRoutes);
+  app.route('/api', lookRoutes);
   app.route('/api', accountRoutes);
   app.all('/api/*', () => {
     throw new HttpError(404, 'not_found', 'Not found.');

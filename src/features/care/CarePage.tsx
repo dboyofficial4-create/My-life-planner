@@ -1,3 +1,4 @@
+import { SkinFinder } from '@/features/looks/SkinFinder';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { Moon, Stethoscope, Sun, CalendarDays, AlertTriangle } from 'lucide-react';
@@ -65,7 +66,8 @@ export default function CarePage() {
   return (
     <div className="page">
       <PageHeader title="Personal Care" description="Simple routines, introduced gradually. Recommendations are product categories — use what you already own where you can." actions={<Link to="/settings/care" className="btn btn-secondary btn-sm">Edit preferences</Link>} />
-      <Callout tone="info">Waypoint can’t see or assess your skin or hair, and doesn’t diagnose conditions or promise results.</Callout>
+      <Callout tone="info">Waypoint doesn’t diagnose skin conditions or promise results. For anything painful, spreading or changing, see a doctor.</Callout>
+      {d.skin && <SkinFinder />}
       {d.skin && (
         <section className="stack">
           <h2>{d.skin.title}</h2>

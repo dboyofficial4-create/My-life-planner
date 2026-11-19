@@ -1,3 +1,4 @@
+import { BuildPlanner } from '@/features/looks/BuildPlanner';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { Activity, Dumbbell, History } from 'lucide-react';
@@ -19,7 +20,7 @@ interface FitnessData {
   ageNotes: string[];
 }
 
-type Tab = 'program' | 'load' | 'history' | 'sports';
+type Tab = 'program' | 'build' | 'load' | 'history' | 'sports';
 
 export default function FitnessPage() {
   const q = useQuery({ queryKey: ['fitness'], queryFn: () => api.get<FitnessData>('/fitness') });
@@ -29,6 +30,7 @@ export default function FitnessPage() {
   const d = q.data;
   const tabs: { value: Tab; label: string }[] = [
     ...(d.program ? [{ value: 'program' as const, label: 'Program' }] : []),
+    { value: 'build', label: 'Build planner' },
     { value: 'load', label: 'Training load' },
     { value: 'history', label: 'History' },
     ...(d.hasSports ? [{ value: 'sports' as const, label: 'Sport skills' }] : []),
@@ -49,6 +51,7 @@ export default function FitnessPage() {
           {d.program.workouts.map((w) => <WorkoutCard key={w.key} w={w} />)}
         </div>
       )}
+      {active === 'build' && <BuildPlanner />}
       {active === 'load' && <LoadChart d={d} />}
       {active === 'history' && <HistoryList d={d} />}
       {active === 'sports' && <SportsPanel />}

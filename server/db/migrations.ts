@@ -340,4 +340,19 @@ CREATE TABLE push_subscriptions (
 );
 `,
   },
+  {
+    id: 7,
+    name: 'look_reports',
+    sql: `
+CREATE TABLE look_reports (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  used_photos INTEGER NOT NULL DEFAULT 0,
+  result TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX look_reports_user ON look_reports(user_id, kind, created_at);
+`,
+  },
 ];

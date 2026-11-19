@@ -235,3 +235,70 @@ h2.display-sm { font-size: clamp(1.75rem, 1.3rem + 1.2vw, 2.5rem); font-weight: 
   .week-band__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
   .today-lead { font-size: var(--text-md); }
 }
+
+/* ---------- Beginner cooking guide ---------- */
+.cook-start { display: grid; gap: var(--s-4); padding: var(--s-5); border-radius: 18px; background: var(--surface-2); }
+.cook-start > .btn { justify-self: start; }
+.cook-checklist { list-style: none; display: grid; gap: var(--s-2); }
+.cook-steps { list-style: none; display: grid; gap: var(--s-3); }
+.cook-step { display: flex; gap: var(--s-4); padding: var(--s-4); border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.cook-step__num { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-text); font-weight: 500; font-variant-numeric: tabular-nums; }
+.cook-step__body { display: grid; gap: var(--s-2); min-width: 0; }
+.cook-step__text { font-size: var(--text-base); line-height: 1.55; }
+.cook-note { display: flex; gap: var(--s-2); align-items: flex-start; font-size: var(--text-sm); color: var(--text-2); }
+.cook-note svg { width: 16px; height: 16px; flex: none; margin-top: 2px; color: var(--text-3); }
+.cook-note--done svg { color: var(--success); }
+.cook-note--safety { color: var(--text); background: var(--warning-soft); padding: var(--s-2) var(--s-3); border-radius: 10px; }
+.cook-note--safety svg { color: var(--warning); }
+.cook-terms { display: grid; gap: var(--s-1); }
+.cook-terms summary { cursor: pointer; font-size: var(--text-xs); color: var(--accent-text); width: fit-content; }
+.cook-terms p { font-size: var(--text-sm); color: var(--text-2); padding: var(--s-1) 0 0 var(--s-4); }
+.cook-timer { display: inline-flex; align-items: center; gap: var(--s-2); width: fit-content; padding: 2px 4px 2px var(--s-3); border-radius: 999px; background: var(--surface-2); font-size: var(--text-sm); }
+.cook-timer svg { width: 16px; height: 16px; }
+.cook-timer .num { min-width: 44px; font-weight: 500; }
+.cook-timer.is-done { background: var(--accent); color: var(--text-inverse); animation: timer-flash 1s ease-in-out 3; }
+.cook-timer.is-done .btn { color: inherit; }
+@keyframes timer-flash { 50% { opacity: 0.55; } }
+.cook-mode { display: grid; gap: var(--s-5); }
+.cook-step--big { border: 0; background: var(--surface-2); padding: var(--s-6); border-radius: 20px; }
+.cook-step--big .cook-step__text { font-size: var(--text-lg); line-height: 1.5; }
+.cook-step--big .cook-step__num { width: 40px; height: 40px; font-size: var(--text-md); }
+.cook-finished { display: grid; justify-items: center; gap: var(--s-3); padding: var(--s-8) var(--s-4); text-align: center; }
+.cook-finished svg { width: 40px; height: 40px; color: var(--success); }
+@media (max-width: 640px) {
+  .cook-step { padding: var(--s-3); gap: var(--s-3); }
+  .cook-step--big { padding: var(--s-4); }
+}
+
+/* ---------- Product finder and build planner ---------- */
+.photo-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); max-width: 560px; }
+.photo-row--two { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 440px; }
+.photo-slot { display: grid; gap: var(--s-2); align-content: start; }
+.photo-slot__empty { display: grid; place-items: center; gap: 4px; padding: var(--s-4); aspect-ratio: 3 / 4; border: 1.5px dashed var(--border-strong); border-radius: 16px; background: var(--surface-2); color: var(--text-2); cursor: pointer; text-align: center; transition: border-color var(--m-out) var(--ease), background var(--m-out) var(--ease); }
+.photo-slot__empty:hover { border-color: var(--accent); background: var(--accent-soft); transition-duration: var(--m-in); }
+.photo-slot__empty svg { width: 24px; height: 24px; }
+.photo-slot__preview { position: relative; aspect-ratio: 3 / 4; border-radius: 16px; overflow: hidden; background: var(--surface-2); }
+.photo-slot__preview img { width: 100%; height: 100%; object-fit: cover; }
+.photo-slot__preview .btn { position: absolute; top: var(--s-2); right: var(--s-2); }
+.look-summary { display: grid; gap: var(--s-3); padding: var(--s-5); border-radius: 20px; background: var(--surface-2); }
+.look-summary > p:first-child { font-size: var(--text-md); line-height: 1.5; }
+.look-obs { display: grid; gap: 4px; padding-left: 18px; font-size: var(--text-sm); }
+.look-real { display: flex; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-radius: 14px; background: var(--surface); }
+.look-real svg { width: 20px; height: 20px; flex: none; color: var(--accent); margin-top: 2px; }
+.look-steps { list-style: none; display: grid; gap: var(--s-4); }
+.look-steps > li { display: flex; gap: var(--s-3); }
+.look-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.look-table th, .look-table td { text-align: left; vertical-align: top; padding: var(--s-3) var(--s-4); border-top: 1px solid var(--border); }
+.look-table th { font-weight: 500; color: var(--text-3); border-top: 0; font-size: var(--text-xs); }
+.table-wrap { overflow-x: auto; }
+@media (max-width: 640px) {
+  .photo-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); }
+  .photo-slot__empty { padding: var(--s-2); }
+  .photo-slot__empty .xsmall { display: none; }
+}
+
+/* ---------- Turn-on-reminders prompt (Today) ---------- */
+.reminder-prompt { display: flex; align-items: center; gap: var(--s-4); padding: var(--s-4) var(--s-5); border-radius: 18px; background: var(--accent-soft); border: 1px solid color-mix(in oklab, var(--accent) 25%, transparent); }
+.reminder-prompt__icon { width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--text-inverse); }
+.reminder-prompt__icon svg { width: 20px; height: 20px; }
+@media (max-width: 640px) { .reminder-prompt { flex-wrap: wrap; } .reminder-prompt > .row-sm { width: 100%; justify-content: space-between; } }

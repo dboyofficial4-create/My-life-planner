@@ -758,6 +758,28 @@ export class UserStore {
   /* ---------- notifications & push ---------- */
 
   /** Insert once per key; returns true if it's new. */
+  /* ---------- skin finder and build planner results (the written result only; photos are never stored) ---------- */
+
+  saveLookReport(kind: 'skin' | 'build', usedPhotos: boolean, result: unknown) {
+    const id = uid();
+    const createdAt = Date.now();
+    this.tx(() => {
+      this.db.run('INSERT INTO look_reports (id, user_id, kind, used_photos, result, created_at) VALUES (?, ?, ?, ?, ?, ?)', id, this.userId, kind, usedPhotos ? 1 : 0, json(result), createdAt);
+      // keep the last 5 of each kind
+      this.db.run('DELETE FROM look_reports WHERE user_id = ? AND kind = ? AND id NOT IN (SELECT id FROM look_reports WHERE user_id = ? AND kind = ? ORDER BY created_at DESC LIMIT 5)', this.userId, kind, this.userId, kind);
+    });
+    return { id, kind, usedPhotos, result, createdAt };
+  }
+
+  latestLookReport(kind: 'skin' | 'build') {
+    const r = this.db.get<{ id: string; kind: 'skin' | 'build'; used_photos: number; result: string; created_at: number }>('SELECT * FROM look_reports WHERE user_id = ? AND kind = ? ORDER BY created_at DESC LIMIT 1', this.userId, kind);
+    return r ? { id: r.id, kind: r.kind, usedPhotos: !!r.used_photos, result: parseJson(r.result, null), createdAt: r.created_at } : null;
+  }
+
+  deleteLookReports(kind: 'skin' | 'build') {
+    return this.db.run('DELETE FROM look_reports WHERE user_id = ? AND kind = ?', this.userId, kind).changes;
+  }
+
   createNotification(n: { key: string; kind: string; title: string; body: string; url: string }): boolean {
     return this.db.run('INSERT OR IGNORE INTO notifications (id, user_id, key, kind, title, body, url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', uid(), this.userId, n.key, n.kind, n.title, n.body, n.url, Date.now()).changes > 0;
   }
@@ -883,6 +905,7 @@ export class UserStore {
       flashcards: t('flashcards'),
       practiceQuestions: t('practice_questions'),
       notifications: t('notifications', 'kind, title, body, url, created_at, read_at'),
+      lookReports: t('look_reports', 'kind, used_photos, result, created_at'),
     };
   }
 }

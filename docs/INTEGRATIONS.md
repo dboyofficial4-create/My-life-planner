@@ -47,3 +47,11 @@ Policies: Waypoint never asks for school passwords and never scrapes restricted 
 * Push endpoints are limited to the known browser push services. Expired subscriptions (404/410) are removed automatically.
 * VAPID keys are created on first run at `data/.vapid-keys.json`. If they change, devices must turn notifications on again.
 * Not verified here: delivery through real push services. Use Settings → Reminders → *Send a test reminder*.
+
+## Skin product finder and build planner (Claude)
+
+* Same Anthropic key as AI study sets (server-wide `ANTHROPIC_API_KEY`, or the user's own key in Settings → Connections).
+* Personal Care → Product finder: a morning/evening routine with product types, ingredients to look for and avoid, and common drugstore examples (examples, not endorsements; no prices or stock).
+* Fitness & Sports → Build planner: training-relevant comparison, honest timeline, a weekly plan from the user's equipment, schedule, limitations and sport.
+* Photos: adults only (`AgePolicy.allowAppearancePhotos`), never stored. Everyone else uses the questions.
+* Not verified here: responses from the real model (tests use a stand-in).

@@ -5,6 +5,10 @@ import { useState } from 'react';
 import { clsx } from 'clsx';
 import { addDays, startOfWeek } from '@shared/domain/time';
 import type { Recipe } from '@shared/domain/nutrition/recipes';
+import { guideFor } from '@shared/domain/nutrition/guides';
+import { CookGuide } from './CookGuide';
+
+const ingredientLabel = (i: { qty: number; unit: string; name: string; note?: string }) => `${i.qty} ${i.unit === 'count' ? '' : `${i.unit} `}${i.name}${i.note ? ` (${i.note})` : ''}`.replace(/\s+/g, ' ');
 import { api, errorMessage } from '@/lib/api';
 import { dayLabel } from '@/lib/format';
 import { Dialog, useToast } from '@/ui/overlay';
@@ -183,8 +187,9 @@ function MealDialog({ entry, d, onClose, onRecipe, queryKey }: { entry: Entry; d
 function RecipeDialog({ id, onClose }: { id: string; onClose: () => void }) {
   const q = useQuery({ queryKey: ['recipe', id], queryFn: () => api.get<{ recipe: Omit<Recipe, 'ingredients'> & { ingredients: (Recipe['ingredients'][number] & { name: string })[]; allergens: string[] }; basis: string }>(`/food/recipes/${id}`) });
   const r = q.data?.recipe;
+  const guide = guideFor(id);
   return (
-    <Dialog open onClose={onClose} title={r?.name ?? 'Recipe'} wide>
+    <Dialog open onClose={onClose} title={r?.name ?? 'Recipe'} description={guide ? 'Written for first-time cooks: what to get ready, every step, and how to tell it’s done.' : undefined} wide>
       {q.isPending ? <Skeleton h={200} /> : q.error ? <ErrorState error={q.error} /> : r && (
         <div className="stack">
           <div className="row-wrap">
@@ -193,18 +198,20 @@ function RecipeDialog({ id, onClose }: { id: string; onClose: () => void }) {
             <Badge>Makes {r.servings}</Badge>
             {r.allergens.map((a) => <Badge key={a} tone="warning">Contains {a.replace('_', ' ')}</Badge>)}
           </div>
-          <div className="grid-2">
-            <div className="stack-sm">
-              <h3>Ingredients</h3>
-              <ul className="small" style={{ paddingLeft: 18 }}>
-                {r.ingredients.map((i) => <li key={i.key}>{i.qty} {i.unit === 'count' ? '' : i.unit} {i.name}{i.note ? ` (${i.note})` : ''}{i.swap ? <span className="subtle"> — {i.swap}</span> : null}</li>)}
-              </ul>
-            </div>
+          <div className="stack-sm">
+            <h3>Ingredients</h3>
+            <ul className="small" style={{ paddingLeft: 18 }}>
+              {r.ingredients.map((i) => <li key={i.key}>{ingredientLabel(i)}{i.swap ? <span className="subtle"> ({i.swap})</span> : null}</li>)}
+            </ul>
+          </div>
+          {guide ? (
+            <CookGuide guide={guide} ingredients={r.ingredients.map((i) => ({ key: i.key, label: ingredientLabel(i) }))} />
+          ) : (
             <div className="stack-sm">
               <h3>Steps</h3>
               <ol className="small" style={{ paddingLeft: 18 }}>{r.steps.map((s) => <li key={s}>{s}</li>)}</ol>
             </div>
-          </div>
+          )}
           <Callout tone="neutral" title={`Per serving: ~${r.nutrition.kcal} kcal · ${r.nutrition.proteinG} g protein · ${r.nutrition.carbsG} g carbs · ${r.nutrition.fatG} g fat`}>{q.data!.basis}</Callout>
         </div>
       )}

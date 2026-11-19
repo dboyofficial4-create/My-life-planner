@@ -4,9 +4,9 @@ import { ArrowRight, BookOpen, Check, CircleCheck, Coffee, Dumbbell, RefreshCcw,
 import { useState } from 'react';
 import { api, errorMessage } from '@/lib/api';
 import type { Item, Preview } from '@/lib/types';
-import { CATEGORY, catColor, greeting, longDay, pluralize, relativeDay, time, timeRange } from '@/lib/format';
+import { CATEGORY, catColor, greeting, longDay, pluralize, relativeDay, relativeDayInline, time, timeRange } from '@/lib/format';
 import { useToast } from '@/ui/overlay';
-import { Badge, Button, Callout, Card, EmptyState, ErrorState, PageHeader, PageSkeleton, ProgressBar } from '@/ui/primitives';
+import { Badge, Button, Callout, Card, EmptyState, ErrorState, PageSkeleton, ProgressBar } from '@/ui/primitives';
 import { ItemDialog, useItemAction } from '@/features/plan/ItemDialog';
 import { AgendaRow } from '@/features/plan/PlanPage';
 import { ReplanDialog, usePreview } from '@/features/plan/ReplanDialog';
@@ -45,18 +45,37 @@ export default function TodayPage() {
   const doneToday = flexible.filter((i) => i.status === 'done').length;
   const replan = () => previewMut.mutate(d.week.start, { onSuccess: setPreview, onError: (e) => toast({ message: errorMessage(e), tone: 'error' }) });
 
+  const nextDue = d.upcoming[0];
   return (
-    <div className="page">
-      <PageHeader
-        eyebrow={longDay(d.today)}
-        title={`${greeting(d.nowMinute)}, ${d.name}`}
-        description={flexible.length ? `${doneToday} of ${pluralize(flexible.length, 'planned activity', 'planned activities')} done today.` : 'Nothing flexible planned today.'}
-        actions={
-          <Button size="sm" icon={RefreshCcw} loading={previewMut.isPending} onClick={replan}>
-            Replan rest of week
-          </Button>
-        }
-      />
+    <div className="page today-page">
+      <section className="today-hero" aria-labelledby="today-h">
+        <div className="today-hero__text enter">
+          <p className="today-kicker"><span className="live-dot" aria-hidden />{longDay(d.today)}</p>
+          <h1 id="today-h" className="display">{greeting(d.nowMinute)}, {d.name}</h1>
+          <p className="today-lead">
+            {flexible.length
+              ? `${doneToday} of ${pluralize(flexible.length, 'planned activity', 'planned activities')} done today.`
+              : 'Nothing flexible planned today.'}
+            {nextDue ? ` Next due: ${nextDue.title}, ${relativeDayInline(nextDue.dueDate, d.today)}.` : ''}
+          </p>
+          {flexible.length > 0 && <ProgressBar value={doneToday} max={flexible.length} label="Today's activities done" />}
+          <div className="row-wrap">
+            <Button variant="primary" icon={RefreshCcw} loading={previewMut.isPending} onClick={replan}>
+              Replan rest of week
+            </Button>
+            <Link to="/plan" className="btn btn-secondary">Week view</Link>
+          </div>
+        </div>
+        <div className="today-frame enter">
+          <NextCard d={d} onOpen={setSelected} onDone={(it) => action.mutate({ id: it.id, input: { action: 'complete' } })} onSkip={(it) => action.mutate({ id: it.id, input: { action: 'skip' } })} busy={action.isPending} />
+          {nextDue && (
+            <Link to="/school" className="today-float">
+              <span className="today-float__row"><span className="live-label">Due {relativeDayInline(nextDue.dueDate, d.today)}</span><span>{nextDue.courseName ?? nextDue.type}</span></span>
+              <span className="today-float__title">{nextDue.title}</span>
+            </Link>
+          )}
+        </div>
+      </section>
 
       {d.stale && (
         <Callout tone="info" title="Something changed" action={<Button size="sm" variant="primary" onClick={replan} loading={previewMut.isPending}>Review</Button>}>
@@ -66,9 +85,13 @@ export default function TodayPage() {
 
       <div className="today-grid">
         <div className="stack-lg">
-          <NextCard d={d} onOpen={setSelected} onDone={(it) => action.mutate({ id: it.id, input: { action: 'complete' } })} onSkip={(it) => action.mutate({ id: it.id, input: { action: 'skip' } })} busy={action.isPending} />
-
-          <Card title="Today’s agenda" action={<Link to="/plan" className="small">Week view</Link>} pad={false}>
+          <div className="app-window" role="region" aria-labelledby="agenda-h">
+            <div className="app-window__bar">
+              <span className="app-window__dots" aria-hidden><i /><i /><i /></span>
+              <span className="app-window__crumb">Waypoint <i>/</i> <b id="agenda-h">Today’s agenda</b></span>
+              <span className="grow" />
+              <Link to="/plan" className="small">Week view</Link>
+            </div>
             {d.items.length === 0 ? (
               <EmptyState icon={Coffee} title="A clear day">Nothing is scheduled. Enjoy the space, or add a commitment in Settings.</EmptyState>
             ) : (
@@ -80,7 +103,7 @@ export default function TodayPage() {
                 ))}
               </ul>
             )}
-          </Card>
+          </div>
         </div>
 
         <div className="stack-lg">
@@ -174,24 +197,27 @@ export default function TodayPage() {
             </Card>
           )}
 
-          {d.week.categories.length > 0 && (
-            <Card title="This week so far" action={<Link to="/progress" className="small">Progress</Link>}>
-              <div className="stack">
-                {d.week.categories.map((c) => (
-                  <div key={c.category} className="stack-sm" style={{ gap: 6 }}>
-                    <div className="row between small">
-                      <span>{CATEGORY[c.category as keyof typeof CATEGORY]?.label ?? c.category}</span>
-                      <span className="subtle num">{c.done} / {c.total}</span>
-                    </div>
-                    <ProgressBar value={c.done} max={c.total} label={`${c.category} completed`} />
-                  </div>
-                ))}
-                <p className="xsmall subtle">Counts only what’s planned this week. Skipping is fine — consistency over perfection.</p>
-              </div>
-            </Card>
-          )}
         </div>
       </div>
+
+      {d.week.categories.length > 0 && (
+        <section className="week-band" aria-labelledby="week-h">
+          <div className="week-band__head">
+            <h2 id="week-h" className="display-sm">This week so far</h2>
+            <p>Counts only what’s planned this week. Skipping is fine: consistency beats perfection.</p>
+            <Link to="/progress" className="week-band__link">See progress <ArrowRight aria-hidden /></Link>
+          </div>
+          <div className="week-band__grid">
+            {d.week.categories.map((c) => (
+              <div key={c.category} className="week-stat">
+                <span className="week-stat__label">{CATEGORY[c.category as keyof typeof CATEGORY]?.label ?? c.category}</span>
+                <span className="week-stat__num num">{c.done}<small> / {c.total}</small></span>
+                <ProgressBar value={c.done} max={c.total} label={`${c.category} completed`} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <ItemDialog item={selected} onClose={() => setSelected(null)} clock={d.clock} />
       <ReplanDialog preview={preview} onClose={() => setPreview(null)} clock={d.clock} />

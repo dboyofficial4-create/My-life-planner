@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { NavLink, useNavigate, useParams } from 'react-router';
+import { Link, NavLink, useNavigate, useParams } from 'react-router';
 import { Download, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { z } from 'zod';
@@ -314,12 +314,12 @@ function PrivacySection() {
 function AboutSection() {
   const rows: [string, string, string][] = [
     ['Planner, Today, Plan, replanning', 'Working', 'Deterministic engine; changes are previewed before applying.'],
-    ['Fitness & sports', 'Working', 'Curated exercise library; general (unsourced) sport drills, labelled.'],
-    ['School', 'Working', 'Manual entry, grade calculator, .ics import. Canvas needs institution credentials; HAC unsupported.'],
-    ['Food & groceries', 'Working', 'Curated recipe library; nutrition values are rough estimates. Goal-timeline ranges are planned.'],
-    ['Personal care', 'Working', 'Rule-based routines by product category; no product data.'],
+    ['Fitness & sports', 'Working', 'Curated exercise library, sourced sport drills and vetted videos, tryout mode, and the AI build planner (body photos 18+).'],
+    ['School', 'Working', 'Manual entry, grade calculator, .ics import, Canvas by access token, study guides and AI study sets. HAC unsupported.'],
+    ['Food & groceries', 'Working', 'Curated recipes with beginner step-by-step guides and timers; nutrition values are rough estimates.'],
+    ['Personal care', 'Working', 'Rule-based routines plus the AI product finder (face photos 14+). Product names are examples; no prices or stock.'],
     ['Style & wardrobe', 'Planned', 'Not available yet — nothing in the app pretends otherwise.'],
-    ['AI explanations', 'Planned', 'Explanations are currently template-based. No data is sent to AI providers.'],
+    ['AI features', 'Working', 'Study sets, product finder and build planner send what you choose to Anthropic (or Google Gemini if set up), only after you agree each time. Plan explanations are template-based.'],
     ['Reminders', 'Working', 'Web Push notifications (Chrome, Edge, Firefox; iPhone via Home Screen on the online version) plus the in-app bell.'],
   ];
   return (
@@ -335,6 +335,7 @@ function AboutSection() {
           </li>
         ))}
       </ul>
+      <div className="card-footer small"><Link to="/terms">Terms of use</Link></div>
     </Card>
   );
 }

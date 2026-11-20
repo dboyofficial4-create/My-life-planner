@@ -9,6 +9,7 @@ import { Shell } from './Shell';
 import { LoginPage, RegisterPage, WelcomePage } from '@/features/auth/AuthPages';
 
 const Onboarding = lazy(() => import('@/features/onboarding/Onboarding'));
+const TermsPage = lazy(() => import('@/features/legal/TermsPage'));
 const TodayPage = lazy(() => import('@/features/today/TodayPage'));
 const PlanPage = lazy(() => import('@/features/plan/PlanPage'));
 const FitnessPage = lazy(() => import('@/features/fitness/FitnessPage'));
@@ -66,6 +67,7 @@ export function App() {
               <Route path="/welcome" element={<WelcomePage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/terms" element={<TermsPage />} />
               <Route element={<RequireAuth onboarding />}>
                 <Route path="/onboarding" element={<Onboarding />} />
               </Route>

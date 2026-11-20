@@ -1,6 +1,7 @@
 /**
  * Skin product finder and build planner: what the student sends and what comes back.
- * Photos are optional and only accepted for adults (AgePolicy.allowAppearancePhotos);
+ * Photos are optional: face photos from 14 (AgePolicy.allowFacePhotos), body photos for adults only
+ * (AgePolicy.allowAppearancePhotos);
  * everyone can use the short questions instead. Photos are never stored.
  */
 import { z } from 'zod';
@@ -39,6 +40,8 @@ export const SkinAdviceInput = z.object({
   budget: z.enum(['low', 'medium', 'high']),
   notes: z.string().trim().max(500),
   consent: z.literal(true, { error: 'Please confirm the details can be sent to the AI service' }),
+  /** Required when photos are sent: they follow the photo rules in the Terms. */
+  photoRules: z.boolean().default(false),
 });
 export type SkinAdviceInput = z.infer<typeof SkinAdviceInput>;
 
@@ -84,6 +87,7 @@ export const BuildPlanInput = z.object({
   goals: z.array(z.enum(BUILD_GOALS)).max(BUILD_GOALS.length),
   description: z.string().trim().max(600),
   consent: z.literal(true, { error: 'Please confirm the details can be sent to the AI service' }),
+  photoRules: z.boolean().default(false),
 });
 export type BuildPlanInput = z.infer<typeof BuildPlanInput>;
 

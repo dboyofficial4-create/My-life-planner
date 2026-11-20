@@ -81,11 +81,23 @@ export function PhotoPrivacy({ photosAllowed, provider }: { photosAllowed: boole
   ) : null;
 }
 
-export function UnderEighteen({ what }: { what: string }) {
+export function NoPhotos({ age, what }: { age: number; what: string }) {
   return (
     <Callout tone="neutral" icon={Lock}>
-      Photo analysis is for ages 18 and up, so your {what} comes from your answers below. It works the same way, and no photo of you is ever sent anywhere.
+      Photos here are for ages {age} and up, so your {what} comes from your answers below. It works the same way, and no photo of you is sent anywhere.
     </Callout>
+  );
+}
+
+/** Shown once a photo is picked: the photo rules must be confirmed before anything is sent. */
+export function PhotoRulesCheck({ checked, onChange, rule }: { checked: boolean; onChange: (v: boolean) => void; rule: string }) {
+  return (
+    <label className="checkbox">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span className="small">
+        My photos follow the <Link to="/terms#photos" target="_blank">photo rules</Link>: {rule}
+      </span>
+    </label>
   );
 }
 

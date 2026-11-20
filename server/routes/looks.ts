@@ -19,7 +19,7 @@ lookRoutes.get('/looks/:kind', (c) => {
   const kind = kindOf(c.req.param('kind'));
   const ctx = loadContext(c.var.store, c.var.now());
   const p = provider(c);
-  return c.json({ report: c.var.store.latestLookReport(kind), photosAllowed: ctx.policy.allowAppearancePhotos, aiReady: !!p, provider: p?.name ?? null });
+  return c.json({ report: c.var.store.latestLookReport(kind), photosAllowed: kind === 'skin' ? ctx.policy.allowFacePhotos : ctx.policy.allowAppearancePhotos, aiReady: !!p, provider: p?.name ?? null });
 });
 
 lookRoutes.delete('/looks/:kind', (c) => {
@@ -46,9 +46,10 @@ const ageLine = (age: number | null, band: string) => (band === 'adult' ? `Age: 
 lookRoutes.post('/looks/skin', async (c) => {
   const input = await body(c, SkinAdviceInput);
   const ctx = loadContext(c.var.store, c.var.now());
-  if (input.photos.length && !ctx.policy.allowAppearancePhotos) {
-    throw new HttpError(403, 'age_restricted', 'Photo analysis is for ages 18 and up. Answer the questions instead; you’ll get the same kind of routine.');
+  if (input.photos.length && !ctx.policy.allowFacePhotos) {
+    throw new HttpError(403, 'age_restricted', 'Face photos are for ages 14 and up. Answer the questions instead; you’ll get the same kind of routine.');
   }
+  if (input.photos.length && !input.photoRules) throw new HttpError(422, 'validation', 'Confirm that your photos follow the photo rules.', { fields: { photoRules: 'Required with photos' } });
   const skin = ctx.settings.skin;
   const brief = [
     ageLine(ctx.policy.age, ctx.policy.band),
@@ -59,7 +60,7 @@ lookRoutes.post('/looks/skin', async (c) => {
     skin?.sensitivities ? `Known sensitivities: ${skin.sensitivities}` : null,
     input.currentProducts ? `What they use now: ${input.currentProducts}` : 'They don’t use anything yet.',
     input.notes ? `Notes: ${input.notes}` : null,
-    input.photos.length ? `${input.photos.length} face photo(s) are attached.` : 'No photos: work from these answers.',
+    input.photos.length ? `${input.photos.length} face photo(s) are attached. They should show the face and at most the shoulders; if anything else is visible, set usable to false.` : 'No photos: work from these answers.',
   ].filter(Boolean).join('\n');
   const ai = lookAI(c);
   const result = sanitizeSkin(await ai.skin(input.photos, brief));
@@ -77,6 +78,7 @@ lookRoutes.post('/looks/build', async (c) => {
   if (usedPhotos && !ctx.policy.allowAppearancePhotos) {
     throw new HttpError(403, 'age_restricted', 'Photo analysis is for ages 18 and up. Pick the build you want and describe it instead; you’ll get the same kind of plan.');
   }
+  if (usedPhotos && !input.photoRules) throw new HttpError(422, 'validation', 'Confirm that your photos follow the photo rules.', { fields: { photoRules: 'Required with photos' } });
   if (!usedPhotos && !input.goals.length && !input.description) throw new HttpError(422, 'validation', 'Pick at least one goal or describe the build you want.');
   const f = ctx.settings.fitness;
   const sports = ctx.modules.has('sports') ? ctx.settings.sports?.sports ?? [] : [];

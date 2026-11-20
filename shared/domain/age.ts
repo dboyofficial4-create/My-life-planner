@@ -20,12 +20,16 @@ export interface AgePolicy {
   allowMaximalLoading: boolean;
   /** Highest RPE the generator will prescribe. */
   maxRpe: number;
-  /** Appearance photo uploads. */
+  /** Face photos for the skin product finder (14+; face and shoulders only). */
+  allowFacePhotos: boolean;
+  /** Body photos for the build planner (adults only). */
   allowAppearancePhotos: boolean;
   notes: string[];
 }
 
 export const MIN_SELF_REGISTER_AGE = 13;
+/** Face photos (skin product finder) from this age; body photos stay 18+. */
+export const MIN_FACE_PHOTO_AGE = 14;
 
 export function agePolicy(birthday: LocalDate | null | undefined, today: LocalDate): AgePolicy {
   if (!birthday) {
@@ -38,6 +42,7 @@ export function agePolicy(birthday: LocalDate | null | undefined, today: LocalDa
       allowWeightLossGoal: false,
       allowMaximalLoading: false,
       maxRpe: 8,
+      allowFacePhotos: false,
       allowAppearancePhotos: false,
       notes: ['Add your birthday in Settings to unlock age-appropriate options.'],
     };
@@ -52,6 +57,7 @@ export function agePolicy(birthday: LocalDate | null | undefined, today: LocalDa
       allowWeightLossGoal: false,
       allowMaximalLoading: false,
       maxRpe: 6,
+      allowFacePhotos: false,
       allowAppearancePhotos: false,
       notes: ['Accounts for people under 13 need a parent or guardian, which Waypoint does not support yet.'],
     };
@@ -65,6 +71,7 @@ export function agePolicy(birthday: LocalDate | null | undefined, today: LocalDa
       allowWeightLossGoal: false,
       allowMaximalLoading: false,
       maxRpe: 8,
+      allowFacePhotos: age >= MIN_FACE_PHOTO_AGE,
       allowAppearancePhotos: false,
       notes: [
         'Plans focus on fuelling growth, sport and energy rather than calorie deficits.',
@@ -80,6 +87,7 @@ export function agePolicy(birthday: LocalDate | null | undefined, today: LocalDa
     allowWeightLossGoal: true,
     allowMaximalLoading: true,
     maxRpe: 9,
+    allowFacePhotos: true,
     allowAppearancePhotos: true,
     notes: [],
   };

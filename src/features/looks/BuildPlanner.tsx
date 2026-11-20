@@ -5,7 +5,7 @@ import { BUILD_GOAL_LABELS, BUILD_GOALS, type BuildPlan, type LookReport } from 
 import { api, errorMessage } from '@/lib/api';
 import { useToast } from '@/ui/overlay';
 import { Button, Callout, Card, Chips, Field, Skeleton, Textarea } from '@/ui/primitives';
-import { AiNotReady, consentText, PhotoPrivacy, PhotoSlot, UnderEighteen, when, type PickedPhoto, type Provider } from './shared';
+import { AiNotReady, consentText, PhotoPrivacy, PhotoSlot, NoPhotos, PhotoRulesCheck, when, type PickedPhoto, type Provider } from './shared';
 
 type Info = { provider: Provider; report: LookReport<BuildPlan> | null; photosAllowed: boolean; aiReady: boolean };
 
@@ -27,9 +27,10 @@ function BuildForm({ photosAllowed, provider, onDone }: { photosAllowed: boolean
   const [goals, setGoals] = useState<(typeof BUILD_GOALS)[number][]>([]);
   const [description, setDescription] = useState('');
   const [consent, setConsent] = useState(false);
+  const [photoRules, setPhotoRules] = useState(false);
   const strip = (p: PickedPhoto | null) => (p ? { mediaType: p.mediaType, data: p.data } : null);
   const go = useMutation({
-    mutationFn: () => api.post('/looks/build', { currentPhoto: strip(current), goalPhoto: strip(goal), goals, description, consent }),
+    mutationFn: () => api.post('/looks/build', { currentPhoto: strip(current), goalPhoto: strip(goal), goals, description, consent, photoRules }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['looks', 'build'] }); onDone(); },
     onError: (e) => toast({ message: errorMessage(e), tone: 'error' }),
   });
@@ -45,9 +46,10 @@ function BuildForm({ photosAllowed, provider, onDone }: { photosAllowed: boolean
               <PhotoSlot label="The build you want" hint="Any photo of the look you’re aiming for" value={goal} onChange={setGoal} />
             </div>
             <PhotoPrivacy photosAllowed provider={provider} />
+            {!!(current || goal) && <PhotoRulesCheck checked={photoRules} onChange={setPhotoRules} rule="me fully clothed in athletic wear, nothing revealing." />}
           </div>
         ) : (
-          <UnderEighteen what="plan" />
+          <NoPhotos age={18} what="plan" />
         )}
         <Chips<(typeof BUILD_GOALS)[number]> label="What are you going for?" multiple options={BUILD_GOALS.map((v) => ({ value: v, label: BUILD_GOAL_LABELS[v] }))} value={goals} onChange={(v) => setGoals(v as typeof goals)} />
         <Field label="Describe it in your words" optional>{(p) => <Textarea {...p} rows={2} value={description} maxLength={600} placeholder="e.g. a point guard’s build: quick, strong legs, more shoulder muscle" onChange={(e) => setDescription(e.target.value)} />}</Field>
@@ -56,7 +58,7 @@ function BuildForm({ photosAllowed, provider, onDone }: { photosAllowed: boolean
           <span className="small">{consentText(provider, photosAllowed && !!(current || goal), 'plan')}</span>
         </label>
         <div className="row-wrap">
-          <Button type="submit" variant="primary" icon={Target} loading={go.isPending} disabled={!consent || !ready}>{go.isPending ? 'Planning… (about 30 seconds)' : 'Make my plan'}</Button>
+          <Button type="submit" variant="primary" icon={Target} loading={go.isPending} disabled={!consent || !ready || (!!(current || goal) && !photoRules)}>{go.isPending ? 'Planning… (about 30 seconds)' : 'Make my plan'}</Button>
         </div>
       </form>
     </Card>

@@ -145,7 +145,7 @@ export function RegisterPage() {
           Continue
         </Button>
         <p className="subtle xsmall">
-          Waypoint stores your data in your account only. You can export or delete it from Settings at any time.
+          By continuing you agree to the <Link to="/terms">terms of use</Link>. Waypoint stores your data in your account only. You can export or delete it from Settings at any time.
         </p>
       </form>
     </AuthLayout>

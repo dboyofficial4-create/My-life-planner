@@ -2,7 +2,7 @@
 
 ## Implemented
 
-* **Data minimisation**: onboarding only asks about the areas the user chooses; settings for unselected modules are discarded. Height and weight are optional. Photos are only used by the skin product finder and build planner, only for adults (18+), only after the user ticks a consent box; they are shrunk and stripped of EXIF/GPS data in the browser, sent once to the configured AI (Anthropic, or Google Gemini when only GEMINI_API_KEY is set), and never stored by Waypoint (only the written result is). On Gemini's free tier Google may retain and review submissions; the consent text says this. Under 18 the same tools work from answers alone.
+* **Data minimisation**: onboarding only asks about the areas the user chooses; settings for unselected modules are discarded. Height and weight are optional. Photos are only used by the skin product finder (face photos, 14+, face and shoulders only) and the build planner (body photos, 18+), only after the user ticks both the consent box and the photo-rules box (Terms §3); they are shrunk and stripped of EXIF/GPS data in the browser, sent once to the configured AI (Anthropic, or Google Gemini when only GEMINI_API_KEY is set), and never stored by Waypoint (only the written result is). On Gemini's free tier Google may retain and review submissions; the consent text says this. Below those ages the same tools work from answers alone. Body photos stay 18+ deliberately: a revealing photo of a minor must never be received or forwarded, and body comparison is a known eating-disorder trigger for teens; a terms clause doesn't remove either risk.
 * **Auth**: scrypt password hashes; random 256-bit session tokens stored as SHA-256 hashes; HttpOnly, SameSite=Lax cookies (Secure in production); 30-day expiry; rate-limited login, registration and demo creation.
 * **CSRF**: writes must be JSON (except DELETE) and same-origin by the `Origin` header.
 * **Isolation**: every query is user-scoped through `UserStore`, covered by tests.
@@ -23,6 +23,8 @@
 Nutrition values are labelled rough estimates. Care routines recommend product categories, introduce actives gradually, include patch-testing and "see a clinician" guidance, and make no diagnoses. Workouts exclude movements that load disclosed limitations and flag reported discomfort.
 
 ## Needs qualified review before launch
+
+* The plain-language Terms of use (`/terms`) are a starting point written without legal review.
 
 No legal or regulatory compliance is claimed. Before launch, get review of:
 

@@ -5,7 +5,7 @@ import { SKIN_CONCERN_LABELS, SKIN_CONCERNS, SKIN_TYPES, type LookReport, type S
 import { api, errorMessage } from '@/lib/api';
 import { useToast } from '@/ui/overlay';
 import { Badge, Button, Callout, Card, Chips, Field, Input, Skeleton, Textarea } from '@/ui/primitives';
-import { AiNotReady, consentText, PhotoPrivacy, PhotoSlot, UnderEighteen, when, type PickedPhoto, type Provider } from './shared';
+import { AiNotReady, consentText, PhotoPrivacy, PhotoSlot, NoPhotos, PhotoRulesCheck, when, type PickedPhoto, type Provider } from './shared';
 
 type Info = { provider: Provider; report: LookReport<SkinAdvice> | null; photosAllowed: boolean; aiReady: boolean };
 const TYPE_LABELS: Record<(typeof SKIN_TYPES)[number], string> = { oily: 'Oily', dry: 'Dry', combination: 'Combination', normal: 'Normal', sensitive: 'Sensitive', not_sure: 'Not sure' };
@@ -34,8 +34,9 @@ function SkinForm({ photosAllowed, provider, onDone }: { photosAllowed: boolean;
   const [currentProducts, setCurrent] = useState('');
   const [notes, setNotes] = useState('');
   const [consent, setConsent] = useState(false);
+  const [photoRules, setPhotoRules] = useState(false);
   const go = useMutation({
-    mutationFn: () => api.post('/looks/skin', { photos: photos.filter(Boolean).map((p) => ({ mediaType: p!.mediaType, data: p!.data })), skinType, concerns, budget, currentProducts, notes, consent }),
+    mutationFn: () => api.post('/looks/skin', { photos: photos.filter(Boolean).map((p) => ({ mediaType: p!.mediaType, data: p!.data })), skinType, concerns, budget, currentProducts, notes, consent, photoRules }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['looks', 'skin'] }); onDone(); },
     onError: (e) => toast({ message: errorMessage(e), tone: 'error' }),
   });
@@ -47,13 +48,14 @@ function SkinForm({ photosAllowed, provider, onDone }: { photosAllowed: boolean;
           <div className="stack-sm">
             <div className="photo-row">
               {photos.map((p, i) => (
-                <PhotoSlot key={i} label={['Front', 'Left side', 'Right side'][i]!} hint={i === 0 ? 'Daylight, no filter, no makeup' : 'Optional'} capture="user" value={p} onChange={(v) => setPhotos((all) => all.map((x, j) => (j === i ? v : x)))} />
+                <PhotoSlot key={i} label={['Front', 'Left side', 'Right side'][i]!} hint={i === 0 ? 'Face and shoulders only, daylight, no filter' : 'Optional'} capture="user" value={p} onChange={(v) => setPhotos((all) => all.map((x, j) => (j === i ? v : x)))} />
               ))}
             </div>
             <PhotoPrivacy photosAllowed provider={provider} />
+            {photos.some(Boolean) && <PhotoRulesCheck checked={photoRules} onChange={setPhotoRules} rule="my own face, shoulders up, normal clothes." />}
           </div>
         ) : (
-          <UnderEighteen what="routine" />
+          <NoPhotos age={14} what="routine" />
         )}
         <Chips<(typeof SKIN_TYPES)[number]> label="How would you describe your skin?" options={SKIN_TYPES.map((v) => ({ value: v, label: TYPE_LABELS[v] }))} value={skinType} onChange={(v) => setSkinType(v as typeof skinType)} />
         <Chips<(typeof SKIN_CONCERNS)[number]> label="What do you want help with?" multiple options={SKIN_CONCERNS.map((v) => ({ value: v, label: SKIN_CONCERN_LABELS[v] }))} value={concerns} onChange={(v) => setConcerns(v as typeof concerns)} />
@@ -65,7 +67,7 @@ function SkinForm({ photosAllowed, provider, onDone }: { photosAllowed: boolean;
           <span className="small">{consentText(provider, photosAllowed && photos.some(Boolean), 'routine')}</span>
         </label>
         <div className="row-wrap">
-          <Button type="submit" variant="primary" icon={Sparkles} loading={go.isPending} disabled={!consent}>{go.isPending ? 'Looking… (about 30 seconds)' : 'Find my products'}</Button>
+          <Button type="submit" variant="primary" icon={Sparkles} loading={go.isPending} disabled={!consent || (photos.some(Boolean) && !photoRules)}>{go.isPending ? 'Looking… (about 30 seconds)' : 'Find my products'}</Button>
         </div>
       </form>
     </Card>

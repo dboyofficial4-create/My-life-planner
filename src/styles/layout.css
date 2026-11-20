@@ -85,3 +85,13 @@
 
 .bell { position: relative; }
 .bell[data-count]::after { content: attr(data-count); position: absolute; top: -2px; right: -2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 500; line-height: 16px; text-align: center; }
+
+/* ---------- Terms page ---------- */
+.legal { min-height: 100dvh; background: var(--bg); }
+.legal__top { padding: var(--s-4) var(--s-6); border-bottom: 1px solid var(--border); background: var(--surface); }
+.legal__body { max-width: 720px; margin: 0 auto; padding: var(--s-10) var(--s-5) var(--s-12); display: grid; gap: var(--s-6); }
+.legal__body section { display: grid; gap: var(--s-3); }
+.legal__body h2 { font-size: var(--text-lg); }
+.legal__body p, .legal__body li { line-height: 1.65; color: var(--text-2); }
+.legal__body ul { padding-left: 20px; display: grid; gap: var(--s-2); }
+.legal__body strong { color: var(--text); font-weight: 500; }

@@ -1,3 +1,4 @@
+import { guideFor } from '../../shared/domain/nutrition/guides';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
@@ -94,7 +95,13 @@ moduleRoutes.get('/food/recipes', (c) => {
   const ctx = loadContext(c.var.store, c.var.now());
   requireModule(ctx.modules, 'nutrition');
   const slot = c.req.query('slot') as 'breakfast' | 'lunch' | 'dinner' | 'snack' | undefined;
-  return c.json({ recipes: compatibleRecipes(ctx.settings.nutrition!, slot).map((r) => ({ id: r.id, name: r.name, minutes: r.prepMinutes + r.cookMinutes, cost: r.cost, slots: r.slots })) });
+  return c.json({
+    recipes: compatibleRecipes(ctx.settings.nutrition!, slot).map((r) => ({
+      id: r.id, name: r.name, minutes: r.prepMinutes + r.cookMinutes, cost: r.cost, slots: r.slots,
+      skill: r.skill, servings: r.servings, packable: r.packable, leftoverFriendly: r.leftoverFriendly,
+      kcal: r.nutrition.kcal, proteinG: r.nutrition.proteinG, steps: guideFor(r.id)?.steps.length ?? r.steps.length,
+    })),
+  });
 });
 
 moduleRoutes.get('/food/recipes/:id', (c) => {

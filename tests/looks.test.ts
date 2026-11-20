@@ -172,3 +172,27 @@ describe('Gemini as the AI', () => {
     }
   });
 });
+
+describe('choosing a build', () => {
+  it('sends the chosen build to the AI and rejects unknown ones', async () => {
+    const { app, calls } = setup();
+    const a = await user(app, '2010-03-03');
+    const r = await a.post('/api/looks/build', buildInput({ goals: [], archetype: 'swimmer', description: 'skinny, play soccer' }));
+    expect(r.status, r.text).toBe(201);
+    expect(calls[0]!.brief).toContain('Chosen build: Swimmer');
+    expect(calls[0]!.brief).toContain('V-taper');
+    expect((await a.post('/api/looks/build', buildInput({ goals: [], archetype: 'not-a-build' }))).status).toBe(422);
+    expect((await a.post('/api/looks/build', buildInput({ goals: [], archetype: null }))).status).toBe(422);
+  });
+
+  it('every build option is complete', async () => {
+    const { BUILD_ARCHETYPES } = await import('../shared/domain/fitness/builds');
+    expect(new Set(BUILD_ARCHETYPES.map((b) => b.id)).size).toBe(BUILD_ARCHETYPES.length);
+    for (const b of BUILD_ARCHETYPES) {
+      expect(b.look.length, b.id).toBeGreaterThanOrEqual(3);
+      expect(b.training.length, b.id).toBeGreaterThanOrEqual(3);
+      expect(b.realityCheck.length, b.id).toBeGreaterThan(30);
+    }
+  });
+});
+

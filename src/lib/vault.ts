@@ -153,3 +153,10 @@ export function wipeVault(userId: string): Promise<void> {
     r.onblocked = () => resolve();
   });
 }
+
+/** One photo's JPEG as base64, for the adult build planner when the user picks it (sent only after they agree). */
+export async function readPhotoData(userId: string, key: CryptoKey, id: string): Promise<string> {
+  const row = (await req((await store(userId, 'photos', 'readonly')).get(id))) as StoredPhoto | undefined;
+  if (!row) throw new Error('That photo is no longer in your vault.');
+  return (JSON.parse(dec.decode(await open_(key, row.iv, row.ct))) as { image: string }).image;
+}

@@ -4,6 +4,7 @@ import { body, HttpError } from '../http';
 import { EQUIPMENT_LABELS } from '../../shared/schemas';
 import { BUILD_GOAL_LABELS, BuildPlanInput, SKIN_CONCERN_LABELS, SkinAdviceInput } from '../../shared/schemas/looks';
 import { loadContext } from '../services/context';
+import { archetypeById } from '../../shared/domain/fitness/builds';
 import { anthropicLookAI, sanitizeBuild, sanitizeSkin } from '../services/lookAI';
 import { geminiLookAI } from '../services/geminiLookAI';
 import { aiKeyFor } from './study';
@@ -88,7 +89,9 @@ lookRoutes.post('/looks/build', async (c) => {
     throw new HttpError(403, 'age_restricted', 'Goal photos are for ages 14 and up. Pick the build you want and describe it instead; you’ll get the same kind of plan.');
   }
   if (usedPhotos && !input.photoRules) throw new HttpError(422, 'validation', 'Confirm that your photos follow the photo rules.', { fields: { photoRules: 'Required with photos' } });
-  if (!usedPhotos && !input.goals.length && !input.description) throw new HttpError(422, 'validation', 'Pick at least one goal or describe the build you want.');
+  const archetype = input.archetype ? archetypeById(input.archetype) : undefined;
+  if (input.archetype && !archetype) throw new HttpError(422, 'validation', 'Choose one of the builds shown.');
+  if (!usedPhotos && !archetype && !input.goals.length && !input.description) throw new HttpError(422, 'validation', 'Choose a build, add a goal photo, or describe the build you want.');
   const f = ctx.settings.fitness;
   const sports = ctx.modules.has('sports') ? ctx.settings.sports?.sports ?? [] : [];
   const brief = [
@@ -98,6 +101,9 @@ lookRoutes.post('/looks/build', async (c) => {
       : 'Training: not set up yet; plan 3 sessions a week of 45 minutes with body weight and dumbbells.',
     f?.limitations.length ? `Injuries or limitations to work around: ${f.limitations.join(', ')}${f.limitationNotes ? ` (${f.limitationNotes})` : ''}.` : null,
     sports.length ? `Sport: ${sports.map((s) => `${s.sport.replace('_', ' ')} (${s.level.replace('_', ' ')}, ${s.seasonPhase} season)`).join('; ')}. Leave room for practice.` : null,
+    archetype
+      ? `Chosen build: ${archetype.name} (seen in ${archetype.seenIn}). Typical look: ${archetype.look.join('; ')}. Typical training emphasis: ${archetype.training.join('; ')}. Reality check to keep: ${archetype.realityCheck}`
+      : null,
     input.goals.length ? `Goal: ${input.goals.map((g) => BUILD_GOAL_LABELS[g]).join(', ')}.` : null,
     input.description ? `In their words: ${input.description}` : null,
     usedPhotos ? `Photos attached: ${[input.currentPhoto && 'current', input.goalPhoto && 'goal'].filter(Boolean).join(' and ')}.` : 'No photos: work from these answers.',

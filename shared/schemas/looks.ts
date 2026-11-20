@@ -85,6 +85,8 @@ export const BuildPlanInput = z.object({
   currentPhoto: PhotoInput.nullable(),
   goalPhoto: PhotoInput.nullable(),
   goals: z.array(z.enum(BUILD_GOALS)).max(BUILD_GOALS.length),
+  /** One of BUILD_ARCHETYPES (shared/domain/fitness/builds.ts). */
+  archetype: z.string().max(40).nullable().default(null),
   description: z.string().trim().max(600),
   consent: z.literal(true, { error: 'Please confirm the details can be sent to the AI service' }),
   photoRules: z.boolean().default(false),

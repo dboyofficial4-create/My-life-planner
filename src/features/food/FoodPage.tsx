@@ -7,6 +7,7 @@ import { addDays, startOfWeek } from '@shared/domain/time';
 import type { Recipe } from '@shared/domain/nutrition/recipes';
 import { guideFor } from '@shared/domain/nutrition/guides';
 import { CookGuide } from './CookGuide';
+import { RecipesTab } from './RecipesTab';
 
 const ingredientLabel = (i: { qty: number; unit: string; name: string; note?: string }) => `${i.qty} ${i.unit === 'count' ? '' : `${i.unit} `}${i.name}${i.note ? ` (${i.note})` : ''}`.replace(/\s+/g, ' ');
 import { api, errorMessage } from '@/lib/api';
@@ -39,7 +40,7 @@ interface FoodData {
 
 export default function FoodPage() {
   const [week, setWeek] = useState<string | null>(null);
-  const [tab, setTab] = useState<'meals' | 'grocery'>('meals');
+  const [tab, setTab] = useState<'meals' | 'recipes' | 'grocery'>('meals');
   const [entry, setEntry] = useState<Entry | null>(null);
   const [recipeId, setRecipeId] = useState<string | null>(null);
   const qc = useQueryClient();
@@ -81,7 +82,7 @@ export default function FoodPage() {
         }
       />
       {d.policyNotes.map((n) => <Callout key={n} tone="info">{n}</Callout>)}
-      <Tabs label="Food sections" value={tab} onChange={setTab} tabs={[{ value: 'meals', label: 'Meals' }, { value: 'grocery', label: `Grocery list${toBuy ? ` (${toBuy})` : ''}` }]} />
+      <Tabs label="Food sections" value={tab} onChange={setTab} tabs={[{ value: 'meals', label: 'Meals' }, { value: 'recipes', label: 'Recipes' }, { value: 'grocery', label: `Grocery list${toBuy ? ` (${toBuy})` : ''}` }]} />
       {tab === 'meals' ? (
         d.entries.length === 0 ? (
           <Card><EmptyState icon={ShoppingBasket} title="No meals planned">No recipes fit your current settings. Try adjusting kitchen or diet preferences.</EmptyState></Card>
@@ -122,6 +123,8 @@ export default function FoodPage() {
             <p className="xsmall subtle row-sm"><Info aria-hidden style={{ width: 12 }} /> Calories are per person. {d.basis}</p>
           </>
         )
+      ) : tab === 'recipes' ? (
+        <RecipesTab onOpen={setRecipeId} planned={new Set(d.entries.map((e) => e.recipeId).filter((x): x is string => !!x))} />
       ) : (
         <GroceryList d={d} />
       )}

@@ -67,7 +67,7 @@ describe('skin finder and build planner', () => {
     const { app, calls } = setup();
     const teen = await user(app, '2010-03-03'); // 16
     expect((await teen.get('/api/looks/skin')).json).toMatchObject({ photosAllowed: true, aiReady: true, report: null });
-    expect((await teen.get('/api/looks/build')).json).toMatchObject({ photosAllowed: false });
+    expect((await teen.get('/api/looks/build')).json).toMatchObject({ photosAllowed: false, goalPhotoAllowed: true });
     expect((await teen.post('/api/looks/skin', skinInput({ photos: [PHOTO] }))).status).toBe(422); // photo rules not confirmed
     expect((await teen.post('/api/looks/build', buildInput({ currentPhoto: PHOTO, photoRules: true }))).status).toBe(403);
     expect(calls).toHaveLength(0);
@@ -79,8 +79,12 @@ describe('skin finder and build planner', () => {
     expect(calls[0]!.brief).toContain('sensitive to fragrance');
     expect(calls[0]!.brief).toContain('at most the shoulders');
 
-    const build = await teen.post('/api/looks/build', buildInput());
-    expect(build.status).toBe(201);
+    // a photo of the build they want (someone else) is fine from 14; a photo of themselves is not
+    expect((await teen.post('/api/looks/build', buildInput({ goalPhoto: PHOTO }))).status).toBe(422); // rules not confirmed
+    const build = await teen.post('/api/looks/build', buildInput({ goalPhoto: PHOTO, photoRules: true }));
+    expect(build.status, build.text).toBe(201);
+    expect(calls[1]!.photos).toBe(1);
+    expect(calls[1]!.brief).toContain('Only a goal photo');
     expect(calls[1]!.brief).toMatch(/knee/);
     expect(build.json.report.result.nutrition).toEqual(['Eat protein at every meal']);
     expect((await teen.get('/api/looks/build')).json.report.result.summary).toBe('Build the upper body.');
@@ -91,6 +95,7 @@ describe('skin finder and build planner', () => {
     const kid = await user(app, '2013-01-01'); // 13
     expect((await kid.get('/api/looks/skin')).json.photosAllowed).toBe(false);
     expect((await kid.post('/api/looks/skin', skinInput({ photos: [PHOTO], photoRules: true }))).status).toBe(403);
+    expect((await kid.post('/api/looks/build', buildInput({ goalPhoto: PHOTO, photoRules: true }))).status).toBe(403);
     expect((await kid.post('/api/looks/skin', skinInput())).status).toBe(201);
     expect(calls).toHaveLength(1);
   });

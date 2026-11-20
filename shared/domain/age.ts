@@ -24,7 +24,9 @@ export interface AgePolicy {
   allowFacePhotos: boolean;
   /** Progress photos kept encrypted on the user's own device, never uploaded (14+). */
   allowProgressPhotos: boolean;
-  /** Body photos for the build planner (adults only). */
+  /** A goal-build photo (of the look they want, not of themselves) for the build planner (14+). */
+  allowGoalPhotos: boolean;
+  /** Photos of the user's own body for the build planner (adults only). */
   allowAppearancePhotos: boolean;
   notes: string[];
 }
@@ -46,6 +48,7 @@ export function agePolicy(birthday: LocalDate | null | undefined, today: LocalDa
       maxRpe: 8,
       allowFacePhotos: false,
       allowProgressPhotos: false,
+      allowGoalPhotos: false,
       allowAppearancePhotos: false,
       notes: ['Add your birthday in Settings to unlock age-appropriate options.'],
     };
@@ -62,6 +65,7 @@ export function agePolicy(birthday: LocalDate | null | undefined, today: LocalDa
       maxRpe: 6,
       allowFacePhotos: false,
       allowProgressPhotos: false,
+      allowGoalPhotos: false,
       allowAppearancePhotos: false,
       notes: ['Accounts for people under 13 need a parent or guardian, which Waypoint does not support yet.'],
     };
@@ -77,6 +81,7 @@ export function agePolicy(birthday: LocalDate | null | undefined, today: LocalDa
       maxRpe: 8,
       allowFacePhotos: age >= MIN_FACE_PHOTO_AGE,
       allowProgressPhotos: age >= MIN_FACE_PHOTO_AGE,
+      allowGoalPhotos: age >= MIN_FACE_PHOTO_AGE,
       allowAppearancePhotos: false,
       notes: [
         'Plans focus on fuelling growth, sport and energy rather than calorie deficits.',
@@ -94,6 +99,7 @@ export function agePolicy(birthday: LocalDate | null | undefined, today: LocalDa
     maxRpe: 9,
     allowFacePhotos: true,
     allowProgressPhotos: true,
+    allowGoalPhotos: true,
     allowAppearancePhotos: true,
     notes: [],
   };

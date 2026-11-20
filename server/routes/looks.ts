@@ -19,7 +19,13 @@ lookRoutes.get('/looks/:kind', (c) => {
   const kind = kindOf(c.req.param('kind'));
   const ctx = loadContext(c.var.store, c.var.now());
   const p = provider(c);
-  return c.json({ report: c.var.store.latestLookReport(kind), photosAllowed: kind === 'skin' ? ctx.policy.allowFacePhotos : ctx.policy.allowAppearancePhotos, aiReady: !!p, provider: p?.name ?? null });
+  return c.json({
+    report: c.var.store.latestLookReport(kind),
+    photosAllowed: kind === 'skin' ? ctx.policy.allowFacePhotos : ctx.policy.allowAppearancePhotos,
+    goalPhotoAllowed: kind === 'build' && ctx.policy.allowGoalPhotos,
+    aiReady: !!p,
+    provider: p?.name ?? null,
+  });
 });
 
 lookRoutes.delete('/looks/:kind', (c) => {
@@ -75,8 +81,11 @@ lookRoutes.post('/looks/build', async (c) => {
   const input = await body(c, BuildPlanInput);
   const ctx = loadContext(c.var.store, c.var.now());
   const usedPhotos = !!(input.currentPhoto || input.goalPhoto);
-  if (usedPhotos && !ctx.policy.allowAppearancePhotos) {
-    throw new HttpError(403, 'age_restricted', 'Photo analysis is for ages 18 and up. Pick the build you want and describe it instead; you’ll get the same kind of plan.');
+  if (input.currentPhoto && !ctx.policy.allowAppearancePhotos) {
+    throw new HttpError(403, 'age_restricted', 'Photos of yourself are for ages 18 and up. You can still add a photo of the build you want, and describe where you are now.');
+  }
+  if (input.goalPhoto && !ctx.policy.allowGoalPhotos) {
+    throw new HttpError(403, 'age_restricted', 'Goal photos are for ages 14 and up. Pick the build you want and describe it instead; you’ll get the same kind of plan.');
   }
   if (usedPhotos && !input.photoRules) throw new HttpError(422, 'validation', 'Confirm that your photos follow the photo rules.', { fields: { photoRules: 'Required with photos' } });
   if (!usedPhotos && !input.goals.length && !input.description) throw new HttpError(422, 'validation', 'Pick at least one goal or describe the build you want.');
@@ -92,6 +101,9 @@ lookRoutes.post('/looks/build', async (c) => {
     input.goals.length ? `Goal: ${input.goals.map((g) => BUILD_GOAL_LABELS[g]).join(', ')}.` : null,
     input.description ? `In their words: ${input.description}` : null,
     usedPhotos ? `Photos attached: ${[input.currentPhoto && 'current', input.goalPhoto && 'goal'].filter(Boolean).join(' and ')}.` : 'No photos: work from these answers.',
+    input.goalPhoto && !input.currentPhoto
+      ? 'Only a goal photo is attached (of someone else, not the user). Describe the training-relevant traits of that build and plan toward them from the answers above. Leave the "now" column to what the user said, or "not shown". If the person in it looks like a professional or adult athlete and the user is under 18, say kindly that the build takes years of training and growth.'
+      : null,
   ].filter(Boolean).join('\n');
   const photos = [
     ...(input.currentPhoto ? [{ label: 'current (the user now)', photo: input.currentPhoto }] : []),

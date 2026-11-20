@@ -7,7 +7,7 @@ import { useToast } from '@/ui/overlay';
 import { Button, Callout, Card, Chips, Field, Skeleton, Textarea } from '@/ui/primitives';
 import { AiNotReady, consentText, PhotoPrivacy, PhotoSlot, NoPhotos, PhotoRulesCheck, when, type PickedPhoto, type Provider } from './shared';
 
-type Info = { provider: Provider; report: LookReport<BuildPlan> | null; photosAllowed: boolean; aiReady: boolean };
+type Info = { provider: Provider; report: LookReport<BuildPlan> | null; photosAllowed: boolean; goalPhotoAllowed: boolean; aiReady: boolean };
 
 export function BuildPlanner() {
   const q = useQuery({ queryKey: ['looks', 'build'], queryFn: () => api.get<Info>('/looks/build') });
@@ -16,10 +16,10 @@ export function BuildPlanner() {
   if (q.error) return <Callout tone="danger">{errorMessage(q.error)}</Callout>;
   const d = q.data;
   if (!d.aiReady) return <AiNotReady />;
-  return d.report && !editing ? <BuildResult r={d.report} onAgain={() => setEditing(true)} /> : <BuildForm photosAllowed={d.photosAllowed} provider={d.provider} onDone={() => setEditing(false)} />;
+  return d.report && !editing ? <BuildResult r={d.report} onAgain={() => setEditing(true)} /> : <BuildForm photosAllowed={d.photosAllowed} goalAllowed={d.goalPhotoAllowed} provider={d.provider} onDone={() => setEditing(false)} />;
 }
 
-function BuildForm({ photosAllowed, provider, onDone }: { photosAllowed: boolean; provider: Provider; onDone: () => void }) {
+function BuildForm({ photosAllowed, goalAllowed, provider, onDone }: { photosAllowed: boolean; goalAllowed: boolean; provider: Provider; onDone: () => void }) {
   const qc = useQueryClient();
   const toast = useToast();
   const [current, setCurrent] = useState<PickedPhoto | null>(null);
@@ -34,7 +34,7 @@ function BuildForm({ photosAllowed, provider, onDone }: { photosAllowed: boolean
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['looks', 'build'] }); onDone(); },
     onError: (e) => toast({ message: errorMessage(e), tone: 'error' }),
   });
-  const ready = goals.length > 0 || description.trim().length > 0 || (photosAllowed && !!goal);
+  const ready = goals.length > 0 || description.trim().length > 0 || !!goal;
   return (
     <Card>
       <form className="stack-lg" onSubmit={(e) => { e.preventDefault(); go.mutate(); }}>
@@ -48,14 +48,23 @@ function BuildForm({ photosAllowed, provider, onDone }: { photosAllowed: boolean
             <PhotoPrivacy photosAllowed provider={provider} />
             {!!(current || goal) && <PhotoRulesCheck checked={photoRules} onChange={setPhotoRules} rule="me fully clothed in athletic wear, nothing revealing." />}
           </div>
+        ) : goalAllowed ? (
+          <div className="stack-sm">
+            <div className="photo-row photo-row--two">
+              <PhotoSlot label="The build you want" hint="A photo of the look you’re aiming for, like an athlete in your sport" value={goal} onChange={setGoal} />
+            </div>
+            <p className="xsmall subtle">Photos of yourself are for ages 18 and up, so tell us where you’re starting from below. Track how you look over time in Progress photos, which never leave your device.</p>
+            <PhotoPrivacy photosAllowed provider={provider} />
+            {goal && <PhotoRulesCheck checked={photoRules} onChange={setPhotoRules} rule="a clothed athlete or person in sportswear, nothing revealing." />}
+          </div>
         ) : (
-          <NoPhotos age={18} what="plan" />
+          <NoPhotos age={14} what="plan" />
         )}
         <Chips<(typeof BUILD_GOALS)[number]> label="What are you going for?" multiple options={BUILD_GOALS.map((v) => ({ value: v, label: BUILD_GOAL_LABELS[v] }))} value={goals} onChange={(v) => setGoals(v as typeof goals)} />
-        <Field label="Describe it in your words" optional>{(p) => <Textarea {...p} rows={2} value={description} maxLength={600} placeholder="e.g. a point guard’s build: quick, strong legs, more shoulder muscle" onChange={(e) => setDescription(e.target.value)} />}</Field>
+        <Field label="Describe it in your words" optional>{(p) => <Textarea {...p} rows={2} value={description} maxLength={600} placeholder={photosAllowed ? 'e.g. a point guard’s build: quick, strong legs, more shoulder muscle' : 'Where you are now and where you want to be, e.g. skinny arms, want a point guard’s build with stronger legs'} onChange={(e) => setDescription(e.target.value)} />}</Field>
         <label className="checkbox">
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-          <span className="small">{consentText(provider, photosAllowed && !!(current || goal), 'plan')}</span>
+          <span className="small">{consentText(provider, !!(current || goal), 'plan')}</span>
         </label>
         <div className="row-wrap">
           <Button type="submit" variant="primary" icon={Target} loading={go.isPending} disabled={!consent || !ready || (!!(current || goal) && !photoRules)}>{go.isPending ? 'Planning… (about 30 seconds)' : 'Make my plan'}</Button>

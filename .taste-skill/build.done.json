@@ -1,11 +1,11 @@
 {
  "page": "public/start/index.html",
- "dir": "/home/user/My-life-planner",
- "kind": "software",
- "start": "2026-11-18T23:27:05.771Z",
- "by": "start.mjs",
  "url": null,
+ "root": "public",
+ "kind": "software",
  "category": "daily planner app for student athletes",
  "primary": "Start your plan",
- "root": "public"
+ "rounds": 3,
+ "start": "2026-11-20T14:11:43.679Z",
+ "by": "gate.mjs --start"
 }

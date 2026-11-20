@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-type="software" data-radius="round" data-ground="sky" data-buttons="pill" data-motion>
+<html lang="en" data-type="software" data-radius="sharp" data-ground="sand" data-buttons="solid" data-motion>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -11,13 +11,13 @@
 <meta property="og:image" content="share.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<meta name="theme-color" content="#f7f9fa">
+<meta name="theme-color" content="#f2f1ed">
 <!-- <link rel="canonical" href="https://[the client's domain]/start/"> : no public domain yet -->
 <meta name="site-kind" content="software">
 <meta name="page-type" content="software">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Mona+Sans:wdth,wght@75..125,400..600&family=Geist+Mono:wght@400..500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400..700&family=Libre+Franklin:wght@400..600&family=JetBrains+Mono:wght@400..500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/system.css">
 <link rel="stylesheet" href="assets/ui/cards.css">
 <link rel="stylesheet" href="assets/motion/motion.css">
@@ -26,18 +26,17 @@
 <link rel="stylesheet" href="assets/icons/icon.css">
 <style>
 :root {
-  --p-bg: #f7f9fa; --p-surface: #ecf0f2; --p-ink: #1f3038; --p-muted: #5d6b72;
-  --p-accent: #0d7480; --p-accent-ink: #ffffff; --p-action: #0d7480; --p-action-ink: #ffffff;
-  --p-inv-bg: #1f3038; --p-inv-surface: #2c3c44; --p-inv-ink: #f7f9fa; --p-inv-muted: #9ea7ab;
-  --p-inv-accent: #f7f9fa; --p-inv-accent-ink: #1f3038; --p-inv-action: #f7f9fa; --p-inv-action-ink: #1f3038;
-  --font-display: "Mona Sans", system-ui, sans-serif;
-  --font-text: "Mona Sans", system-ui, sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --display-weight: 500;
-  --display-tracking: -0.03em;
-  --display-tracking-xl: -0.04em;
-  --display-stretch: 104%;
-  --ly-scale: 0.96;
+  --p-bg: #f2f1ed; --p-surface: #e8e6df; --p-ink: #1d1c19; --p-muted: #5f5d55;
+  --p-accent: #015186; --p-accent-ink: #f2f1ed; --p-action: #015186; --p-action-ink: #f2f1ed;
+  --p-inv-bg: #0b0a09; --p-inv-surface: #1d1c19; --p-inv-ink: #f2f1ed; --p-inv-muted: #a9a8a3;
+  --p-inv-accent: #f2f1ed; --p-inv-accent-ink: #1d1c19; --p-inv-action: #f2f1ed; --p-inv-action-ink: #1d1c19;
+  --font-display: "Source Serif 4", Georgia, serif;
+  --font-text: "Libre Franklin", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display-weight: 400;
+  --display-tracking: -0.02em;
+  --display-tracking-xl: -0.026em;
+  --ly-scale: 1;
 }
 </style>
 <link rel="stylesheet" href="assets/ui/base.css">
@@ -86,6 +85,8 @@
   @media (max-width: 639px) { .nav__actions > .nav__link { display: none; } }
   /* the three steps stack (tablet) or go two-up (1024 to 1279): two screens there */
   @media (min-width: 640px) and (max-width: 1279px) { #school { --h: 2; } }
+  /* the demo's status line takes no room until it has something to say */
+  [data-demo-status]:empty { display: none; }
   /* on a phone the float card would sit on the plan it describes */
   @media (max-width: 639px) { .hero__media > .ly-float { display: none; } }
   /* the field ground's own minimum (88svh) would cut the section under one screen on a tablet */
@@ -95,9 +96,9 @@
 <body>
 <!-- type: software (site-kind software)
      deal: hero split, nav nav-centre, close close-type, footer footer-columns, rhythm dark-band, buttons pill,
-     mark stack, palette cool-white-slate (an off-white page and a teal accent, the paper and ink of a study desk),
-     type mona, radius round (a consumer app), lit ground sky, grounds hero bg-dots, faq bg-field,
-     effect grain-gradient in the one [data-visual] frame (#training)
+     mark stack. Look from the client's reference (start.mjs brand): paper #f2f1ed, ink #1d1c19, sky #015186 accent,
+     press #0b0a09 for the dark band; type source-serif (forced: the reference sets a serif title face, and Source Serif 4 is its own fallback; newsreader failed hero-lines), radius sharp,
+     buttons solid, lit ground sand, faq bg-field. No dot ground or shader effect (the client's design rules ban both).
      moments: iris-opens on the dark band (#reminders) -->
 <header class="nav nav--centre">
   <div class="wrap nav__bar">
@@ -121,7 +122,7 @@
 </header>
 
 <main id="top">
-  <section class="hero hero--split bg-dots" data-enter aria-labelledby="hero-h">
+  <section class="hero hero--split" data-enter aria-labelledby="hero-h">
     <div class="wrap"><div class="hero-text grid hero__grid">
       <div class="hero__text span-5">
         <p class="hero__kicker"><span class="dot" aria-hidden="true"></span>Test reminders start 3 days out</p>
@@ -256,7 +257,7 @@
           </ul>
           <a class="link" href="/register">Set up your sport</a>
         </div>
-        <div class="frame frame--split span-6 start-7" data-visual data-fx="grain-gradient" data-fx-seed="11" data-fx-params='{"grainMotion":0,"speed":0}'>
+        <div class="frame frame--split span-6 start-7" data-visual>
           <div class="stage stage--fade-b"><div class="at-rise to-edge" style="--w:400px;--ax:max(32px, 50% - 200px);--ay:56px" data-ui-loop>
             <div class="ui ui-panel ui-checks" data-ui="checklist" role="img" aria-label="A basketball shooting plan for week 2 with five drills, two done">
               <div class="ui-checks__head">

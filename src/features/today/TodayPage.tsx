@@ -63,7 +63,7 @@ export default function TodayPage() {
             {flexible.length
               ? `${doneToday} of ${pluralize(flexible.length, 'planned activity', 'planned activities')} done today.`
               : 'Nothing flexible planned today.'}
-            {nextDue ? ` Next due: ${nextDue.title}, ${relativeDayInline(nextDue.dueDate, d.today)}.` : ''}
+            {nextDue ? <> Next due: <em>{nextDue.title}</em>, {relativeDayInline(nextDue.dueDate, d.today)}.</> : null}
           </p>
           {flexible.length > 0 && <ProgressBar value={doneToday} max={flexible.length} label="Today's activities done" />}
           <div className="row-wrap">
@@ -98,10 +98,8 @@ export default function TodayPage() {
       <div className="today-grid">
         <div className="stack-lg">
           <div className="app-window" role="region" aria-labelledby="agenda-h">
-            <div className="app-window__bar">
-              <span className="app-window__dots" aria-hidden><i /><i /><i /></span>
-              <span className="app-window__crumb">Waypoint <i>/</i> <b id="agenda-h">Today’s agenda</b></span>
-              <span className="grow" />
+            <div className="app-window__bar sheet__head">
+              <h2 id="agenda-h" className="grow">Today’s agenda</h2>
               <Link to="/plan" className="small">Week view</Link>
             </div>
             {d.items.length === 0 ? (

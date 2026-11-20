@@ -10,7 +10,6 @@ import {
 import { agePolicy } from '@shared/domain/age';
 import { api, errorMessage, fieldErrors } from '@/lib/api';
 import { useMe } from '@/app/App';
-import { getTheme, setTheme, type ThemePref } from '@/lib/theme';
 import { Dialog, useToast } from '@/ui/overlay';
 import { Button, Callout, Card, Chips, ErrorState, Field, Input, PageHeader, PageSkeleton } from '@/ui/primitives';
 import {
@@ -128,7 +127,6 @@ function SimpleSection<T>({ title, settingsKey, initial, render, note }: { title
 function ProfileSection({ s }: { s: SettingsBundle }) {
   const [p, setP] = useState<Profile>(s.profile);
   const [errors, setErrors] = useState<Errors>({});
-  const [theme, setThemeState] = useState<ThemePref>(getTheme());
   const save = useSaveSetting();
   const policy = agePolicy(p.birthday, new Date().toISOString().slice(0, 10));
   return (
@@ -139,9 +137,6 @@ function ProfileSection({ s }: { s: SettingsBundle }) {
           <ProfileForm value={p} onChange={setP} errors={{ ...errors, ...fieldErrors(save.error) }} policy={policy} />
           <SaveBar loading={save.isPending} error={save.error} onSave={() => { const e = validate(SETTINGS_SCHEMAS.profile, p); setErrors(e); if (!Object.keys(e).length) save.mutate({ key: 'profile', value: p }); }} />
         </div>
-      </Card>
-      <Card title="Appearance">
-        <Chips label="Theme" value={theme} onChange={(v) => { setTheme(v as ThemePref); setThemeState(v as ThemePref); }} options={[{ value: 'system', label: 'Match system' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
       </Card>
     </>
   );

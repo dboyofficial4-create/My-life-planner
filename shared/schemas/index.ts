@@ -12,11 +12,13 @@ export const weekday = z.number().int().min(0).max(6);
 export const timeZone = z.string().refine(isValidTimeZone, 'Unknown time zone');
 export const id = z.string().min(1).max(64);
 
-export const MODULES = ['fitness', 'sports', 'school', 'nutrition', 'skincare', 'haircare', 'style'] as const;
+export const MODULES = ['fitness', 'sports', 'school', 'nutrition', 'skincare', 'haircare'] as const;
 export const ModuleId = z.enum(MODULES);
 export type ModuleId = z.infer<typeof ModuleId>;
 /** Modules that are functional in this release. Others are shown as "planned", never as working. */
 export const AVAILABLE_MODULES: readonly ModuleId[] = ['fitness', 'sports', 'school', 'nutrition', 'skincare', 'haircare'];
+/** Areas removed from the app; dropped quietly from older saved profiles and drafts. */
+const REMOVED_MODULES = new Set(['style']);
 
 export const TimePref = z.enum(['morning', 'afternoon', 'evening', 'any']);
 export type TimePref = z.infer<typeof TimePref>;
@@ -34,7 +36,7 @@ export const ProfileSchema = z.object({
   activityLevel: z.enum(['low', 'moderate', 'high', 'very_high']),
   budget: z.enum(['tight', 'moderate', 'flexible']),
   accessibilityNotes: z.string().max(500),
-  modules: z.array(ModuleId).min(1, 'Choose at least one area'),
+  modules: z.preprocess((v) => (Array.isArray(v) ? v.filter((m) => !REMOVED_MODULES.has(m)) : v), z.array(ModuleId).min(1, 'Choose at least one area')),
 });
 export type Profile = z.infer<typeof ProfileSchema>;
 
@@ -47,7 +49,6 @@ export const GOAL_KINDS = {
   nutrition: ['eat_consistently', 'fuel_training', 'budget_cooking', 'body_composition'],
   skincare: ['simple_skin_routine', 'skin_concerns'],
   haircare: ['healthier_hair', 'low_maintenance_hair'],
-  style: ['better_outfits'],
 } as const satisfies Record<ModuleId, readonly string[]>;
 
 /** Every goal the forms offer can be chosen at once (one per kind and area). */
@@ -71,7 +72,6 @@ export const GOAL_LABELS: Record<string, string> = {
   skin_concerns: 'Work on a specific skin concern',
   healthier_hair: 'Healthier hair and scalp',
   low_maintenance_hair: 'A low-maintenance hair routine',
-  better_outfits: 'Dress better day to day',
 };
 
 export const GoalSchema = z.object({

@@ -29,7 +29,7 @@ const MODULE_DEFAULTS: Partial<Record<'fitness' | 'sports' | 'school' | 'nutriti
   skin: { type: 'not_sure', concerns: [], fragranceSensitive: false, sensitivities: '', currentProducts: '', routineSize: 'minimal' } satisfies SkinPrefs,
   hair: { texture: 'not_sure', scalp: 'normal', washesPerWeek: 3, heat: 'never', chemicallyTreated: false, concerns: [], facialHair: 'not_applicable', currentProducts: '' } satisfies HairPrefs,
 };
-const MODULE_KEYS: Record<ModuleId, (keyof typeof MODULE_DEFAULTS)[]> = { fitness: ['fitness'], sports: ['fitness', 'sports'], school: ['school'], nutrition: ['nutrition'], skincare: ['skin'], haircare: ['hair'], style: [] };
+const MODULE_KEYS: Record<ModuleId, (keyof typeof MODULE_DEFAULTS)[]> = { fitness: ['fitness'], sports: ['fitness', 'sports'], school: ['school'], nutrition: ['nutrition'], skincare: ['skin'], haircare: ['hair'] };
 
 interface SettingsData {
   settings: Partial<SettingsBundle>;
@@ -318,7 +318,6 @@ function AboutSection() {
     ['School', 'Working', 'Manual entry, grade calculator, .ics import, Canvas by access token, study guides and AI study sets. HAC unsupported.'],
     ['Food & groceries', 'Working', 'Curated recipes with beginner step-by-step guides and timers; nutrition values are rough estimates.'],
     ['Personal care', 'Working', 'Rule-based routines plus the AI product finder (face photos 14+). Product names are examples; no prices or stock.'],
-    ['Style & wardrobe', 'Planned', 'Not available yet — nothing in the app pretends otherwise.'],
     ['AI features', 'Working', 'Study sets, product finder and build planner send what you choose to Anthropic (or Google Gemini if set up), only after you agree each time. Plan explanations are template-based.'],
     ['Reminders', 'Working', 'Web Push notifications (Chrome, Edge, Firefox; iPhone via Home Screen on the online version) plus the in-app bell.'],
   ];

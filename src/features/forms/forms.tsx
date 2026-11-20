@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, BookOpen, Dumbbell, HelpCircle, Lock, Shirt, Sparkles, Trophy, Utensils, Wind, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, BookOpen, Dumbbell, HelpCircle, Lock, Sparkles, Trophy, Utensils, Wind, X } from 'lucide-react';
 import type { ZodType } from 'zod';
 import {
   ALLERGENS, AVAILABLE_MODULES, COMMITMENT_KINDS, EQUIPMENT, EQUIPMENT_LABELS, GOAL_KINDS, GOAL_LABELS, LIMITATIONS, SPORTS,
@@ -70,7 +70,6 @@ export const MODULE_INFO: Record<ModuleId, { label: string; description: string;
   nutrition: { label: 'Food', description: 'Meal plans, recipes and a grocery list', icon: Utensils },
   skincare: { label: 'Skincare', description: 'A simple routine that’s easy to keep', icon: Sparkles },
   haircare: { label: 'Hair & grooming', description: 'Wash-day and daily routines', icon: Wind },
-  style: { label: 'Style', description: 'Wardrobe and outfits — coming in a later release', icon: Shirt },
 };
 
 export function ModulesPicker({ value, onChange }: { value: ModuleId[]; onChange: (v: ModuleId[]) => void }) {

@@ -317,3 +317,13 @@ describe('goals', () => {
     expect(saved.status, JSON.stringify(saved.json)).toBe(200);
   });
 });
+
+describe('removed Style area', () => {
+  it('older profiles that still list it load without it', async () => {
+    const { ProfileSchema, GOAL_KINDS, MODULES } = await import('../shared/schemas');
+    const old = { ...onboarding().profile, modules: ['fitness', 'style', 'school'] };
+    expect(ProfileSchema.parse(old).modules).toEqual(['fitness', 'school']);
+    expect(MODULES).not.toContain('style' as never);
+    expect(Object.keys(GOAL_KINDS)).not.toContain('style');
+  });
+});

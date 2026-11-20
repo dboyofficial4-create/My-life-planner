@@ -355,4 +355,13 @@ CREATE TABLE look_reports (
 CREATE INDEX look_reports_user ON look_reports(user_id, kind, created_at);
 `,
   },
+  {
+    id: 8,
+    name: 'remove_style_area',
+    sql: `
+DELETE FROM goals WHERE module = 'style';
+UPDATE settings SET data = replace(replace(data, ',"style"', ''), '"style",', '') WHERE key = 'profile' AND data LIKE '%"style"%';
+UPDATE onboarding SET draft = replace(replace(draft, ',"style"', ''), '"style",', '') WHERE draft LIKE '%"style"%';
+`,
+  },
 ];

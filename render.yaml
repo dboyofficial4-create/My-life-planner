@@ -1,20 +1,45 @@
-# Render Blueprint: one web service with a persistent disk for the SQLite database.
-# Free instances can't attach a disk (data would be wiped on every restart), so this
-# uses the paid "starter" plan. See docs/DEPLOY.md.
+# Render Blueprint: one always-on web service with a persistent disk for the SQLite database,
+# its daily backups, and the server's generated keys (encryption, Web Push).
+# The free plan can't be used: it sleeps after 15 idle minutes (reminders would stop) and has
+# no disk (every deploy would erase all accounts). "starter" is the smallest plan that works.
+# Step-by-step guide: docs/DEPLOY.md.
 services:
   - type: web
     name: waypoint
     runtime: node
     plan: starter
+    branch: claude/life-improvement-app-vrherg
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
+    autoDeploy: true
     envVars:
       - key: DATABASE_PATH
         value: /var/data/waypoint.db
-      # Optional: a server-wide key so every account can use AI study sets.
-      # Leave unset to let each person add their own key in Settings → Connections.
+      # Render sits in front of the app as a proxy; use its address header for rate limits.
+      - key: TRUST_PROXY
+        value: "1"
+      # Asked for when you create the Blueprint (sync: false = you type it in Render, never in git).
+      # The public address, e.g. https://waypoint-ab12.onrender.com (used in password reset emails).
+      - key: APP_URL
+        sync: false
+      # Only people with this code can sign up. Strongly recommended if ANTHROPIC_API_KEY is set.
+      - key: SIGNUP_CODE
+        sync: false
+      # Claude for study sets, the product finder and the build planner (billed to this key).
       - key: ANTHROPIC_API_KEY
+        sync: false
+      # An address push services can contact, e.g. mailto:you@example.com
+      - key: VAPID_SUBJECT
+        sync: false
+      # Optional: password reset by email (see docs/DEPLOY.md, "Email").
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
         sync: false
     disk:
       name: waypoint-data

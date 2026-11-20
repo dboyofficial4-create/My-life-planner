@@ -364,4 +364,20 @@ UPDATE settings SET data = replace(replace(data, ',"style"', ''), '"style",', ''
 UPDATE onboarding SET draft = replace(replace(draft, ',"style"', ''), '"style",', '') WHERE draft LIKE '%"style"%';
 `,
   },
+  {
+    id: 9,
+    name: 'account_recovery',
+    sql: `
+ALTER TABLE users ADD COLUMN recovery_code_hash TEXT;
+ALTER TABLE users ADD COLUMN recovery_code_created_at TEXT;
+CREATE TABLE password_resets (
+  token_hash TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at INTEGER NOT NULL,
+  used_at INTEGER,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX password_resets_user ON password_resets(user_id);
+`,
+  },
 ];

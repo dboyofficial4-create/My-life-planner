@@ -11,6 +11,7 @@ import { ItemDialog, useItemAction } from '@/features/plan/ItemDialog';
 import { AgendaRow } from '@/features/plan/PlanPage';
 import { ReplanDialog, usePreview } from '@/features/plan/ReplanDialog';
 import { ReminderPrompt } from './ReminderPrompt';
+import { RecoveryPrompt } from './RecoveryPrompt';
 
 interface TodayData {
   today: string;
@@ -79,6 +80,7 @@ export default function TodayPage() {
       </section>
 
       <ReminderPrompt />
+      <RecoveryPrompt />
 
       {d.stale && (
         <Callout tone="info" title="Something changed" action={<Button size="sm" variant="primary" onClick={replan} loading={previewMut.isPending}>Review</Button>}>

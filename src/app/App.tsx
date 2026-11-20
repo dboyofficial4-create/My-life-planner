@@ -7,6 +7,7 @@ import { ToastProvider } from '@/ui/overlay';
 import { ErrorState, PageSkeleton } from '@/ui/primitives';
 import { Shell } from './Shell';
 import { LoginPage, RegisterPage, WelcomePage } from '@/features/auth/AuthPages';
+import { ForgotPage, ResetPage } from '@/features/auth/RecoveryPages';
 
 const Onboarding = lazy(() => import('@/features/onboarding/Onboarding'));
 const TermsPage = lazy(() => import('@/features/legal/TermsPage'));
@@ -68,6 +69,8 @@ export function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/terms" element={<TermsPage />} />
+              <Route path="/forgot" element={<ForgotPage />} />
+              <Route path="/reset" element={<ResetPage />} />
               <Route element={<RequireAuth onboarding />}>
                 <Route path="/onboarding" element={<Onboarding />} />
               </Route>

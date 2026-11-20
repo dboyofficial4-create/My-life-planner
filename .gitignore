@@ -3,6 +3,7 @@ dist
 *.tsbuildinfo
 data/*.db
 data/*.db-*
+data/backups/
 data/.encryption-key
 data/.vapid-keys.json
 .env

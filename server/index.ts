@@ -8,6 +8,8 @@ import { purgeExpiredDemos } from './services/demo';
 import { resolveEncryptionKey } from './auth/keys';
 import { loadOrCreateVapidKeys } from './integrations/webpush';
 import { runReminders } from './services/reminders';
+import { smtpMailerFromEnv } from './services/mail';
+import { backupDaily } from './services/backup';
 import { dirname, join } from 'node:path';
 
 // Settings from a .env file next to package.json (ANTHROPIC_API_KEY, PORT, …), if there is one.
@@ -37,6 +39,10 @@ const appConfig: AppConfig = {
   geminiApiKey: process.env.GEMINI_API_KEY || undefined,
   vapid: loadOrCreateVapidKeys(join(dirname(dbPath), '.vapid-keys.json')),
   vapidSubject: process.env.VAPID_SUBJECT || 'mailto:waypoint@example.com',
+  mailer: smtpMailerFromEnv(process.env),
+  appUrl: process.env.APP_URL?.trim() || undefined,
+  trustProxy: process.env.TRUST_PROXY === '1',
+  signupCode: process.env.SIGNUP_CODE?.trim() || undefined,
 };
 const app = createApp(db, appConfig);
 
@@ -63,6 +69,20 @@ const purge = () => {
 };
 purge();
 setInterval(purge, 60 * 60_000).unref();
+
+// Daily backup of the database next to it (data/backups or /var/data/backups), newest 7 kept.
+const backup = () => {
+  try {
+    const made = backupDaily(db, join(dirname(dbPath), 'backups'));
+    if (made) console.log(`[backup] saved ${made}`);
+  } catch (e) {
+    console.error(`[backup] failed: ${(e as Error).message}`);
+  }
+};
+if (dbPath !== ':memory:') {
+  backup();
+  setInterval(backup, 60 * 60_000).unref();
+}
 
 // Reminders: check every minute (each reminder is sent once).
 let running = false;

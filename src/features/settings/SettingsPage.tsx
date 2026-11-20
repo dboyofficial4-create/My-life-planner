@@ -19,6 +19,7 @@ import {
 } from '@/features/forms/forms';
 import { describeCommitment } from '@/features/onboarding/Onboarding';
 import { IntegrationsList } from './Integrations';
+import { SecuritySection } from './SecuritySection';
 import { RemindersSection } from './RemindersSection';
 
 const MODULE_DEFAULTS: Partial<Record<'fitness' | 'sports' | 'school' | 'nutrition' | 'skin' | 'hair', unknown>> = {
@@ -46,6 +47,7 @@ const SECTIONS = [
   { id: 'food', label: 'Food', modules: ['nutrition'] },
   { id: 'care', label: 'Personal care', modules: ['skincare', 'haircare'] },
   { id: 'connections', label: 'Connections' },
+  { id: 'security', label: 'Password & recovery' },
   { id: 'privacy', label: 'Privacy & data' },
   { id: 'about', label: 'About this version' },
 ];
@@ -78,6 +80,7 @@ export default function SettingsPage() {
           {current === 'food' && <SimpleSection<NutritionPrefs> title="Food preferences" settingsKey="nutrition" initial={(s.nutrition ?? MODULE_DEFAULTS.nutrition) as NutritionPrefs} render={(v, on) => <NutritionForm value={v} onChange={on} />} note="To apply these to meals you’ve already planned, use “New meal plan” on the Food page." />}
           {current === 'care' && <CareSection s={s} />}
           {current === 'connections' && <IntegrationsList />}
+          {current === 'security' && <SecuritySection />}
           {current === 'privacy' && <PrivacySection />}
           {current === 'about' && <AboutSection />}
         </div>

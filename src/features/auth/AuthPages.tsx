@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router';
 import { CalendarCheck2, Navigation, RefreshCcw, ShieldCheck } from 'lucide-react';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
@@ -97,6 +97,7 @@ export function LoginPage() {
         <Field label="Password" error={f.password}>
           {(p) => <Input {...p} type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />}
         </Field>
+        <Link to="/forgot" className="small" style={{ marginTop: -8 }}>Forgot password?</Link>
         <Button type="submit" variant="primary" size="lg" block loading={m.isPending}>
           Sign in
         </Button>
@@ -113,7 +114,9 @@ export function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [birthday, setBirthday] = useState('');
-  const m = useMutation({ mutationFn: () => api.post('/auth/register', { email, password, birthday }), onSuccess: after });
+  const [signupCode, setSignupCode] = useState('');
+  const opts = useQuery({ queryKey: ['signup-options'], queryFn: () => api.get<{ codeRequired: boolean }>('/auth/signup-options') });
+  const m = useMutation({ mutationFn: () => api.post('/auth/register', { email, password, birthday, ...(opts.data?.codeRequired ? { signupCode } : {}) }), onSuccess: after });
   const f = fieldErrors(m.error);
   return (
     <AuthLayout>
@@ -141,6 +144,11 @@ export function RegisterPage() {
         <Field label="Birthday" hint="Used only to keep plans age-appropriate (for example, no calorie deficits for teens)." error={f.birthday}>
           {(p) => <Input {...p} type="date" value={birthday} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setBirthday(e.target.value)} />}
         </Field>
+        {opts.data?.codeRequired && (
+          <Field label="Sign-up code" hint="This Waypoint is invite-only. Ask whoever runs it for the code." error={f.signupCode}>
+            {(p) => <Input {...p} autoComplete="off" value={signupCode} onChange={(e) => setSignupCode(e.target.value)} />}
+          </Field>
+        )}
         <Button type="submit" variant="primary" size="lg" block loading={m.isPending}>
           Continue
         </Button>

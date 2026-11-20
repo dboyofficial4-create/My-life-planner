@@ -302,3 +302,24 @@ h2.display-sm { font-size: clamp(1.75rem, 1.3rem + 1.2vw, 2.5rem); font-weight: 
 .reminder-prompt__icon { width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--text-inverse); }
 .reminder-prompt__icon svg { width: 20px; height: 20px; }
 @media (max-width: 640px) { .reminder-prompt { flex-wrap: wrap; } .reminder-prompt > .row-sm { width: 100%; justify-content: space-between; } }
+
+/* ---------- Progress photo vault ---------- */
+.vault-note { display: flex; gap: var(--s-3); padding: var(--s-4) var(--s-5); border-radius: 18px; background: var(--accent-soft); }
+.vault-note svg { width: 22px; height: 22px; flex: none; color: var(--accent-text); margin-top: 2px; }
+.vault-grid { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s-3); }
+.vault-tile { display: grid; gap: var(--s-1); }
+.vault-tile > button { padding: 0; border: 2px solid transparent; border-radius: 16px; overflow: hidden; aspect-ratio: 3 / 4; background: var(--surface-2); cursor: pointer; transition: border-color var(--m-out) var(--ease), transform var(--m-out) var(--ease); }
+.vault-tile > button:hover { transform: translateY(-2px); transition-duration: var(--m-in); }
+.vault-tile.is-picked > button { border-color: var(--accent); }
+.vault-tile img, .vault-compare img, .vault-new img { width: 100%; height: 100%; object-fit: cover; display: block; -webkit-user-drag: none; user-select: none; }
+.vault-tile__foot { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); padding-left: var(--s-1); }
+.vault-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); max-width: 640px; }
+.vault-compare figure { margin: 0; display: grid; gap: var(--s-2); }
+.vault-compare img { aspect-ratio: 3 / 4; border-radius: 14px; }
+.vault-new { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+.vault-new img { aspect-ratio: 3 / 4; border-radius: 14px; }
+@media (max-width: 640px) {
+  .vault-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .vault-new { grid-template-columns: minmax(0, 1fr); }
+  .vault-new img { max-width: 220px; }
+}

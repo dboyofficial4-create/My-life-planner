@@ -1,6 +1,7 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
+import { appCsp, SECURITY_HEADERS, welcomeCsp } from './server/security';
 
 // The public welcome page is a static page in public/start/. In development, serve its index for /start/
 // (the production server does the same in server/index.ts).
@@ -14,6 +15,9 @@ const welcomePage: Plugin = {
         return res.end();
       }
       if (req.url && /^\/start\/(\?.*)?$/.test(req.url)) req.url = req.url.replace(/^\/start\//, '/start/index.html');
+      // The same page lock in development as in production (see server/security.ts).
+      for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
+      res.setHeader('Content-Security-Policy', req.url?.startsWith('/start') ? welcomeCsp() : appCsp({ dev: true }));
       next();
     });
   },

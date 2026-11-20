@@ -39,6 +39,8 @@ moduleRoutes.get('/fitness', (c) => {
     equipment: (ctx.settings.fitness?.equipment ?? []).map((e) => EQUIPMENT_LABELS[e]),
     limitations: ctx.settings.fitness?.limitations ?? [],
     hasSports: ctx.modules.has('sports') && !!ctx.settings.sports?.sports.length,
+    /** Progress photos never reach the server; this only says whether the app offers them. */
+    progressPhotos: ctx.modules.has('sports') && ctx.policy.allowProgressPhotos,
     history,
     load,
     loadCap: 3,

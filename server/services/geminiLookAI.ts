@@ -4,7 +4,13 @@
  * as the Claude version (lookAI.ts). Note: on Gemini's free tier Google may use what is
  * sent to improve its products; the consent text in the app says so.
  */
-import { ApiError, GoogleGenAI } from '@google/genai';
+// Loaded only when Gemini is used, so the server still starts if the package is missing.
+type GenAI = typeof import('@google/genai');
+let sdk: Promise<GenAI> | null = null;
+const loadSdk = () => (sdk ??= import('@google/genai').catch(() => {
+  sdk = null;
+  throw new HttpError(503, 'ai_unavailable', 'The Gemini package isn’t installed. Run npm install, then restart Waypoint.');
+}));
 import { z, type ZodType } from 'zod';
 import { HttpError } from '../http';
 import { BUILD_PROMPT, SKIN_PROMPT, type LookAIFactory } from './lookAI';
@@ -18,7 +24,7 @@ export function jsonSchema(schema: ZodType) {
   return rest;
 }
 
-function geminiError(e: unknown): never {
+function geminiError(e: unknown, ApiError: GenAI['ApiError']): never {
   if (e instanceof HttpError) throw e;
   if (e instanceof ApiError) {
     if (e.status === 400 && /api key/i.test(e.message)) throw new HttpError(409, 'ai_bad_key', 'Google rejected the Gemini API key. Check GEMINI_API_KEY in the .env file.');
@@ -32,12 +38,13 @@ function geminiError(e: unknown): never {
 }
 
 export const geminiLookAI: LookAIFactory = (apiKey) => {
-  const client = new GoogleGenAI({ apiKey });
   async function ask<T>(system: string, schema: ZodType<T>, images: { label: string; photo: PhotoInput }[], brief: string): Promise<T> {
     const parts = [
       ...images.flatMap(({ label, photo }) => [{ text: `Photo: ${label}` }, { inlineData: { mimeType: photo.mediaType, data: photo.data } }]),
       { text: brief },
     ];
+    const { GoogleGenAI, ApiError } = await loadSdk();
+    const client = new GoogleGenAI({ apiKey });
     let res;
     try {
       res = await client.models.generateContent({
@@ -46,7 +53,7 @@ export const geminiLookAI: LookAIFactory = (apiKey) => {
         config: { systemInstruction: system, responseMimeType: 'application/json', responseJsonSchema: jsonSchema(schema), maxOutputTokens: 8000 },
       });
     } catch (e) {
-      geminiError(e);
+      geminiError(e, ApiError);
     }
     if (res.promptFeedback?.blockReason) throw new HttpError(422, 'ai_refused', 'Gemini couldn’t help with those photos. Try different photos, or answer the questions instead.');
     let data: unknown;

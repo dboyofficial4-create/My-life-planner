@@ -10,6 +10,8 @@
 * **Logging**: errors log only route and error type, never bodies or personal data.
 * **Secrets**: none in client code; integration tokens are encrypted server-side with `APP_ENCRYPTION_KEY`.
 * **Reminders**: push messages are empty wake-ups, so reminder text never passes through the browser's push service; reminders are kept 14 days, never sent during sleep hours, and can be turned off per type or entirely.
+* **Progress photos (athletes, 14+)**: never leave the device. Encrypted in the browser (PBKDF2-SHA-256, 600,000 rounds → non-extractable AES-256-GCM key held only in memory; a random IV per photo; date and note encrypted with the image) and stored in that browser's IndexedDB, one database per account. Locks after 5 idle minutes or when the tab is hidden; 30-second cool-down after 5 wrong passcodes; a forgotten passcode can only wipe the vault. The server has no route that accepts them and they're not in the export (both covered by tests).
+* **Content-Security-Policy**: every page may only connect to, post forms to and load scripts from Waypoint itself (`server/security.ts`, also applied by the dev server), so on-device data can't be sent elsewhere even by an injected script. Verified in a browser: fetch, beacon, image and form requests to another origin were all blocked.
 * **Skin finder and build planner**: never rate looks or identify people; unusable or inappropriate photos are rejected; for under-18s no weight or body-fat numbers and no dieting (enforced in the prompt and filtered again on the server); warning signs point to a doctor.
 * **Demo data**: separate flagged accounts that can't log in with a password and are purged after 24 hours.
 

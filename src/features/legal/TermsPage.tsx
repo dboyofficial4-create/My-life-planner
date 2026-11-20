@@ -32,6 +32,7 @@ export default function TermsPage() {
           <ul>
             <li><strong>Product finder (skin):</strong> ages {MIN_FACE_PHOTO_AGE} and up. Your face only, from the shoulders up, in normal clothes.</li>
             <li><strong>Build planner (body):</strong> ages 18 and up. Fully clothed in athletic wear (for example a T-shirt or tank top and shorts). Under 18, the build planner works from your answers instead of photos.</li>
+            <li><strong>Progress photos (athletes):</strong> ages {MIN_FACE_PHOTO_AGE} and up. These never leave your device: they’re encrypted with your passcode and kept only in that browser. The same clothing rules apply.</li>
             <li>Only photos of yourself, or, for the build planner’s goal photo, a photo of the general look you want. Never photos of other people without their permission.</li>
             <li>No nudity, underwear, swimwear, or sexual or revealing photos, ever.</li>
           </ul>

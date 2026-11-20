@@ -15,6 +15,7 @@ import { schoolRoutes } from './routes/school';
 import { accountRoutes } from './routes/account';
 import { sportsRoutes } from './routes/sports';
 import { notificationRoutes } from './routes/notifications';
+import { appCsp, SECURITY_HEADERS, welcomeCsp } from './security';
 import { lookRoutes } from './routes/looks';
 
 export interface AppConfig {
@@ -59,7 +60,7 @@ export function createApp(db: Db, config: AppConfig) {
   const now = config.now ?? (() => new Date());
   const limiter = new Map<string, { count: number; resetAt: number }>();
 
-  app.use('*', secureHeaders({ referrerPolicy: 'same-origin', crossOriginEmbedderPolicy: false }));
+  app.use('*', secureHeaders({ referrerPolicy: 'no-referrer', crossOriginEmbedderPolicy: false }));
   // Study-material uploads may carry files (base64); everything else stays small.
   const uploadLimit = bodyLimit({ maxSize: 30 * 1024 * 1024, onError: () => { throw new HttpError(413, 'too_large', 'Files are too large together (20 MB max).'); } });
   const defaultLimit = bodyLimit({ maxSize: 512 * 1024, onError: () => { throw new HttpError(413, 'too_large', 'That upload is too large.'); } });
@@ -104,6 +105,15 @@ export function createApp(db: Db, config: AppConfig) {
   });
 
   app.get('/api/health', (c) => c.json({ ok: true, apiVersion: API_VERSION }));
+  // Security headers on every response; the page-level lock (CSP) on every HTML page.
+  app.use('*', async (c, next) => {
+    await next();
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) c.res.headers.set(k, v);
+    if (c.res.headers.get('content-type')?.includes('text/html')) {
+      c.res.headers.set('Content-Security-Policy', c.req.path.startsWith('/start') ? welcomeCsp() : appCsp());
+    }
+  });
+
   app.route('/api/auth', authRoutes);
   app.route('/api/onboarding', onboardingRoutes);
   app.route('/api', planRoutes);

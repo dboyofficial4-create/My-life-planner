@@ -380,4 +380,22 @@ CREATE TABLE password_resets (
 CREATE INDEX password_resets_user ON password_resets(user_id);
 `,
   },
+  {
+    id: 10,
+    name: 'readiness_and_team_schedule',
+    sql: `
+CREATE TABLE readiness (
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  date TEXT NOT NULL,
+  answers TEXT NOT NULL,
+  score INTEGER NOT NULL,
+  level TEXT NOT NULL,
+  plan TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (user_id, date)
+);
+ALTER TABLE commitments ADD COLUMN external_uid TEXT;
+CREATE INDEX commitments_external ON commitments(user_id, external_uid);
+`,
+  },
 ];

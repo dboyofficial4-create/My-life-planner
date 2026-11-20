@@ -185,6 +185,40 @@ export class UserStore {
     }
   }
 
+  /* ---------- readiness check-ins ---------- */
+
+  saveReadiness(date: string, answers: unknown, r: { score: number; level: string; plan: string }) {
+    this.db.run(
+      'INSERT INTO readiness (user_id, date, answers, score, level, plan, created_at) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(user_id, date) DO UPDATE SET answers = excluded.answers, score = excluded.score, level = excluded.level, plan = excluded.plan, created_at = excluded.created_at',
+      this.userId, date, json(answers), r.score, r.level, r.plan, now(),
+    );
+  }
+
+  readinessOn(date: string) {
+    const r = this.db.get<{ date: string; answers: string; score: number; level: string; plan: string }>('SELECT date, answers, score, level, plan FROM readiness WHERE user_id = ? AND date = ?', this.userId, date);
+    return r ? { date: r.date, answers: parseJson<Record<string, unknown>>(r.answers, {}), score: r.score, level: r.level as 'green' | 'yellow' | 'red', plan: r.plan as 'normal' | 'lighter' | 'recovery' } : null;
+  }
+
+  readinessSince(from: string) {
+    return this.db.all<{ date: string; score: number; level: string }>('SELECT date, score, level FROM readiness WHERE user_id = ? AND date >= ? ORDER BY date', this.userId, from);
+  }
+
+  /** Insert or update a commitment imported from a team calendar, matched by the event's UID. */
+  upsertImportedCommitment(externalUid: string, c: CommitmentInput): 'added' | 'updated' {
+    const row = this.db.get<{ id: string }>('SELECT id FROM commitments WHERE user_id = ? AND external_uid = ?', this.userId, externalUid);
+    if (row) {
+      this.updateCommitment(row.id, c);
+      return 'updated';
+    }
+    const id = this.createCommitment(c);
+    this.db.run('UPDATE commitments SET external_uid = ? WHERE id = ? AND user_id = ?', externalUid, id, this.userId);
+    return 'added';
+  }
+
+  importedUids(): Set<string> {
+    return new Set(this.db.all<{ external_uid: string }>('SELECT external_uid FROM commitments WHERE user_id = ? AND external_uid IS NOT NULL', this.userId).map((r) => r.external_uid));
+  }
+
   /* ---------- commitments ---------- */
 
   listCommitments(): Commitment[] {
@@ -906,6 +940,7 @@ export class UserStore {
       practiceQuestions: t('practice_questions'),
       notifications: t('notifications', 'kind, title, body, url, created_at, read_at'),
       lookReports: t('look_reports', 'kind, used_photos, result, created_at'),
+      readiness: t('readiness', 'date, answers, score, level, plan, created_at'),
     };
   }
 }

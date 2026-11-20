@@ -12,6 +12,9 @@ import { AgendaRow } from '@/features/plan/PlanPage';
 import { ReplanDialog, usePreview } from '@/features/plan/ReplanDialog';
 import { ReminderPrompt } from './ReminderPrompt';
 import { RecoveryPrompt } from './RecoveryPrompt';
+import { ReadinessCard } from './ReadinessCard';
+import { useMe } from '@/app/App';
+import { agePolicy } from '@shared/domain/age';
 
 interface TodayData {
   today: string;
@@ -36,6 +39,7 @@ export default function TodayPage() {
   const previewMut = usePreview();
   const action = useItemAction();
   const toast = useToast();
+  const me = useMe();
 
   if (q.isPending) return <PageSkeleton />;
   if (q.error) return <div className="page"><ErrorState error={q.error} onRetry={() => q.refetch()} /></div>;
@@ -48,6 +52,7 @@ export default function TodayPage() {
   const replan = () => previewMut.mutate(d.week.start, { onSuccess: setPreview, onError: (e) => toast({ message: errorMessage(e), tone: 'error' }) });
 
   const nextDue = d.upcoming[0];
+  const adult = agePolicy(me.data?.user.birthday ?? null, d.today).band === 'adult';
   return (
     <div className="page today-page">
       <section className="today-hero" aria-labelledby="today-h">
@@ -81,6 +86,8 @@ export default function TodayPage() {
 
       <ReminderPrompt />
       <RecoveryPrompt />
+
+      {(d.modules.includes('fitness') || d.modules.includes('sports')) && <ReadinessCard onAdapt={replan} adult={adult} />}
 
       {d.stale && (
         <Callout tone="info" title="Something changed" action={<Button size="sm" variant="primary" onClick={replan} loading={previewMut.isPending}>Review</Button>}>

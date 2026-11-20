@@ -53,6 +53,10 @@ function compute(store: UserStore, weekStart: LocalDate, now: Date) {
     cardsDue: ctx.modules.has('school') ? store.cardsDueBy(week.end) : 0,
     skin: ctx.skin,
     hair: ctx.hair,
+    readiness: (() => {
+      const r = store.readinessOn(ctx.today);
+      return r ? { date: r.date, plan: r.plan } : null;
+    })(),
   });
   const result = replan(current, input, nowMoment(ctx, week.start));
   if (result.validationErrors.length) {

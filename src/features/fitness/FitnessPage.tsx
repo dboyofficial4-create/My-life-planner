@@ -1,5 +1,6 @@
 import { BuildPlanner } from '@/features/looks/BuildPlanner';
 import { ProgressPhotos } from './ProgressPhotos';
+import { GamesPanel } from './GamesPanel';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { Activity, Dumbbell, History } from 'lucide-react';
@@ -22,7 +23,7 @@ interface FitnessData {
   ageNotes: string[];
 }
 
-type Tab = 'program' | 'build' | 'photos' | 'load' | 'history' | 'sports';
+type Tab = 'program' | 'games' | 'build' | 'photos' | 'load' | 'history' | 'sports';
 
 export default function FitnessPage() {
   const q = useQuery({ queryKey: ['fitness'], queryFn: () => api.get<FitnessData>('/fitness') });
@@ -32,6 +33,7 @@ export default function FitnessPage() {
   const d = q.data;
   const tabs: { value: Tab; label: string }[] = [
     ...(d.program ? [{ value: 'program' as const, label: 'Program' }] : []),
+    ...(d.hasSports ? [{ value: 'games' as const, label: 'Games' }] : []),
     { value: 'build', label: 'Build planner' },
     ...(d.progressPhotos ? [{ value: 'photos' as const, label: 'Progress photos' }] : []),
     { value: 'load', label: 'Training load' },
@@ -54,6 +56,7 @@ export default function FitnessPage() {
           {d.program.workouts.map((w) => <WorkoutCard key={w.key} w={w} />)}
         </div>
       )}
+      {active === 'games' && <GamesPanel />}
       {active === 'build' && <BuildPlanner />}
       {active === 'photos' && <ProgressPhotos />}
       {active === 'load' && <LoadChart d={d} />}

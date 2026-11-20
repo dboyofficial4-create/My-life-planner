@@ -317,7 +317,7 @@ function PrivacySection() {
 function AboutSection() {
   const rows: [string, string, string][] = [
     ['Planner, Today, Plan, replanning', 'Working', 'Deterministic engine; changes are previewed before applying.'],
-    ['Fitness & sports', 'Working', 'Curated exercise library, sourced sport drills and vetted videos, tryout mode, and the AI build planner (body photos 18+).'],
+    ['Fitness & sports', 'Working', 'Curated exercise library, sourced sport drills and vetted videos, tryout mode, morning check-in that adapts the day’s training, team-schedule import with game-day meals and recovery, and the AI build planner (body photos 18+).'],
     ['School', 'Working', 'Manual entry, grade calculator, .ics import, Canvas by access token, study guides and AI study sets. HAC unsupported.'],
     ['Food & groceries', 'Working', 'Curated recipes with beginner step-by-step guides and timers; nutrition values are rough estimates.'],
     ['Personal care', 'Working', 'Rule-based routines plus the AI product finder (face photos 14+). Product names are examples; no prices or stock.'],

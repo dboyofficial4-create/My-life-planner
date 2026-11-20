@@ -10,6 +10,8 @@ import type { Routine } from '../care/routines';
 import { washDays } from '../care/routines';
 import { studyRequests, type AssignmentLike } from '../school/study';
 import type { ActivityRequest, FixedBlock, Interval, PlanInput } from './types';
+import type { ReadinessPlan } from '../fitness/readiness';
+import { gameDayRequests } from '../sports/schedule';
 
 export interface BuildContext {
   dates: LocalDate[];
@@ -28,6 +30,8 @@ export interface BuildContext {
   /** User-locked items carried over from the current plan. */
   locked?: FixedBlock[];
   notBefore?: PlanInput['notBefore'];
+  /** Today's readiness check-in, if any: 'lighter' moves hard training off today, 'recovery' moves all of it. */
+  readiness?: { date: LocalDate; plan: ReadinessPlan } | null;
 }
 
 const isWeekend = (d: LocalDate) => {
@@ -225,6 +229,46 @@ export function buildPlanInput(ctx: BuildContext): BuildResult {
       }
     }
     if (settings.sports.sports.some((s) => s.tryoutDate)) notes.push('Hard training is kept off tryout days and the day before.');
+  }
+
+  /* ---- Game days ---- */
+  if (modules.has('sports') || modules.has('fitness')) {
+    const games = fixed.filter((f) => f.kind === 'game' && dates.includes(f.date));
+    if (games.length) {
+      requests.push(...gameDayRequests(games, dates, awake, requests));
+      notes.push('Game days include a pre-game meal and snack, a recovery snack after, and easy recovery the next day.');
+    }
+  }
+
+  /* ---- Today's readiness check-in ---- */
+  const r = ctx.readiness;
+  if (r && r.plan !== 'normal' && dates.includes(r.date)) {
+    let moved = 0;
+    for (const q of requests) {
+      const load = q.load ?? 0;
+      if (load <= 0 || (r.plan === 'lighter' && load < 2)) continue;
+      q.avoidDates = [...new Set([...(q.avoidDates ?? []), r.date])];
+      moved++;
+    }
+    if (modules.has('fitness') || modules.has('sports')) {
+      const a = awake[r.date]!;
+      requests.push({
+        key: `readiness:recovery:${r.date}`,
+        title: r.plan === 'recovery' ? 'Recovery: easy movement & mobility' : 'Light session: mobility & easy cardio',
+        category: 'recovery',
+        idealMinutes: 20,
+        minMinutes: 10,
+        count: 1,
+        perDay: true,
+        eligibleDates: [r.date],
+        priority: 2,
+        window: { start: a.start + 60, end: a.end - 60 },
+        load: 0,
+        explain: r.plan === 'recovery' ? 'From your check-in: today is for recovery. A walk or easy bike, then stretching.' : 'From your check-in: keep today light. Easy cardio and mobility instead of hard training.',
+        meta: { readiness: r.plan },
+      });
+    }
+    notes.push(r.plan === 'recovery' ? `Your check-in says recover today, so ${moved ? 'training moved to other days' : 'today stays easy'}.` : `Your check-in says take it easier today, so ${moved ? 'hard training moved to other days' : 'today stays light'}.`);
   }
 
   /* ---- School ---- */

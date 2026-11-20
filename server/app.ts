@@ -17,6 +17,7 @@ import { sportsRoutes } from './routes/sports';
 import { notificationRoutes } from './routes/notifications';
 import { appCsp, SECURITY_HEADERS, welcomeCsp } from './security';
 import { lookRoutes } from './routes/looks';
+import { athleteRoutes } from './routes/athlete';
 
 export interface AppConfig {
   /** Secure cookies (HTTPS). True in production. */
@@ -130,6 +131,7 @@ export function createApp(db: Db, config: AppConfig) {
   app.route('/api', sportsRoutes);
   app.route('/api', notificationRoutes);
   app.route('/api', lookRoutes);
+  app.route('/api', athleteRoutes);
   app.route('/api', accountRoutes);
   app.all('/api/*', () => {
     throw new HttpError(404, 'not_found', 'Not found.');

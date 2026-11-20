@@ -36,7 +36,7 @@ export default function TermsPage() {
             <li>Only photos of yourself, or, for the build planner’s goal photo, a photo of the general look you want. Never photos of other people without their permission.</li>
             <li>No nudity, underwear, swimwear, or sexual or revealing photos, ever.</li>
           </ul>
-          <p>Photos that break these rules are rejected and not used. Don’t send them: you are responsible for what you upload, and breaking the photo rules can get your account closed. Waypoint never stores photos. They are shrunk on your device, sent once to the AI service named on the form, and only the written result is saved.</p>
+          <p>Photos that break these rules are rejected and not used. Don’t send them: you are responsible for what you upload, and breaking the photo rules can get your account closed. Waypoint’s server never stores photos. Photos for the product finder and build planner are shrunk on your device, sent once to the AI service named on the form, and only the written result is saved. Progress photos are never sent anywhere.</p>
         </section>
 
         <section id="ai">

@@ -36,6 +36,8 @@ export interface AppConfig {
   coachAI?: import('./services/coachAI').CoachAIFactory;
   /** Coach questions per person per day (COACH_DAILY_LIMIT, default 40). Keeps your AI bill predictable. */
   coachDailyLimit?: number;
+  /** Server-wide YouTube Data API key (YOUTUBE_API_KEY) for Coach's video research. Users can also add their own in Settings → Connections. */
+  youtubeApiKey?: string;
   /** Web Push (reminders). Created on first start next to the database. */
   vapid?: import('./integrations/webpush').VapidKeys;
   /** Contact for push services, e.g. mailto:you@example.com (VAPID_SUBJECT). */

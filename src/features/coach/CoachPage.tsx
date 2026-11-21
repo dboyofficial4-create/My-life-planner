@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { ArrowUp, Globe, History, MessageCircle, Plus, ShieldCheck, Square, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 import { api, ApiError, errorMessage } from '@/lib/api';
@@ -19,6 +19,8 @@ type CoachInfo = {
   threads: Thread[];
   limit: { used: number; max: number };
   suggestions: string[];
+  /** Coach can check YouTube videos and their comments. */
+  youtube: boolean;
 };
 
 const PROVIDER = { claude: 'Anthropic (Claude)', gemini: 'Google (Gemini)' } as const;
@@ -66,7 +68,7 @@ function Consent({ info }: { info: CoachInfo }) {
 }
 
 /** Reads the server's event stream: thread → text… / search → done | error. */
-async function streamChat(body: unknown, signal: AbortSignal, on: { thread: (t: Thread, q: Msg) => void; text: (t: string) => void; search: () => void }): Promise<Msg> {
+async function streamChat(body: unknown, signal: AbortSignal, on: { thread: (t: Thread, q: Msg) => void; text: (t: string) => void; search: (kind: 'web' | 'youtube') => void }): Promise<Msg> {
   let res: Response;
   try {
     res = await fetch('/api/coach/chat', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal });
@@ -98,7 +100,7 @@ async function streamChat(body: unknown, signal: AbortSignal, on: { thread: (t: 
       const d = JSON.parse(data);
       if (event === 'thread') on.thread(d.thread, d.question);
       else if (event === 'text') on.text(d.t);
-      else if (event === 'search') on.search();
+      else if (event === 'search') on.search(d.kind === 'youtube' ? 'youtube' : 'web');
       else if (event === 'done') return d.message as Msg;
       else if (event === 'error') throw new ApiError(500, d.code, d.message);
     }
@@ -114,7 +116,7 @@ function Chat({ info }: { info: CoachInfo }) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [draft, setDraft] = useState(params.get('ask') ?? '');
   const [research, setResearch] = useState(true);
-  const [streaming, setStreaming] = useState<{ text: string; searching: boolean } | null>(null);
+  const [streaming, setStreaming] = useState<{ text: string; searching: false | 'web' | 'youtube' } | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const abort = useRef<AbortController | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -174,7 +176,7 @@ function Chat({ info }: { info: CoachInfo }) {
           setMessages((m) => m.map((x) => (x.id === temp.id ? q : x)));
         },
         text: (t) => setStreaming((s) => ({ text: (s?.text ?? '') + t, searching: false })),
-        search: () => setStreaming((s) => ({ text: s?.text ?? '', searching: true })),
+        search: (kind) => setStreaming((s) => ({ text: s?.text ?? '', searching: kind })),
       });
       setMessages((m) => [...m, reply]);
     } catch (e) {
@@ -227,7 +229,10 @@ function Chat({ info }: { info: CoachInfo }) {
       <section className="coach__main" aria-label="Chat">
         <div className="coach__bar">
           <Button size="sm" variant="ghost" icon={History} className="coach__history-btn" onClick={() => setShowHistory((v) => !v)} aria-expanded={showHistory}>History</Button>
-          <span className="xsmall subtle grow">{left} of {info.limit.max} questions left today</span>
+          <span className="xsmall subtle grow">
+            {left} of {info.limit.max} questions left today ·{' '}
+            {info.youtube ? 'YouTube research on' : info.provider === 'claude' ? <Link to="/settings/connections">Connect YouTube for video research</Link> : 'Web research on'}
+          </span>
           {threadId && <Button size="sm" variant="ghost" icon={Plus} onClick={newChat} disabled={!!streaming}>New</Button>}
         </div>
 
@@ -247,7 +252,7 @@ function Chat({ info }: { info: CoachInfo }) {
             <div className="coach-msg coach-msg--assistant">
               {streaming.text ? <div className="coach-msg__body prose"><Markdown text={streaming.text} /></div> : null}
               {(streaming.searching || !streaming.text) && (
-                <p className="coach-msg__status xsmall"><span className="coach-dots" aria-hidden />{streaming.searching ? 'Searching the web…' : research ? 'Thinking (and searching if it helps)…' : 'Thinking…'}</p>
+                <p className="coach-msg__status xsmall"><span className="coach-dots" aria-hidden />{streaming.searching === 'youtube' ? 'Checking YouTube videos and their comments…' : streaming.searching ? 'Searching the web…' : research ? 'Thinking (and searching if it helps)…' : 'Thinking…'}</p>
               )}
             </div>
           )}

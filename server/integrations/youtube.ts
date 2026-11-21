@@ -107,3 +107,79 @@ function thumbUrl(u: string | undefined): string | null {
 function decodeEntities(s: string): string {
   return s.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 }
+
+/* ---------- open research (Coach): search, stats, top comments ---------- */
+
+export interface ResearchVideo {
+  videoId: string;
+  title: string;
+  channelTitle: string;
+  publishedAt: string;
+  url: string;
+  views: number | null;
+  likes: number | null;
+  commentCount: number | null;
+  durationSeconds: number | null;
+}
+
+/** ISO 8601 duration (PT1H2M3S) to seconds. */
+export function isoSeconds(d: string | undefined): number | null {
+  const m = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(d ?? '');
+  return m ? Number(m[1] ?? 0) * 3600 + Number(m[2] ?? 0) * 60 + Number(m[3] ?? 0) : null;
+}
+
+/** Search all of YouTube (strict safe search), then load each video's numbers. About 101 quota units. */
+export async function searchVideos(query: string, key: string, fetchImpl: FetchFn = fetch, max = 8): Promise<ResearchVideo[]> {
+  const s = await call<{ items?: { id?: { videoId?: string } }[] }>(
+    'search',
+    { part: 'snippet', type: 'video', q: query, maxResults: String(max), safeSearch: 'strict', order: 'relevance', relevanceLanguage: 'en' },
+    key,
+    fetchImpl,
+  );
+  const ids = (s.items ?? []).map((i) => i.id?.videoId).filter((v): v is string => !!v && /^[\w-]{6,20}$/.test(v));
+  if (!ids.length) return [];
+  const v = await call<{ items?: { id: string; snippet?: { title?: string; channelTitle?: string; publishedAt?: string }; statistics?: { viewCount?: string; likeCount?: string; commentCount?: string }; contentDetails?: { duration?: string } }[] }>(
+    'videos',
+    { part: 'snippet,statistics,contentDetails', id: ids.join(',') },
+    key,
+    fetchImpl,
+  );
+  const num = (x: string | undefined) => (x === undefined ? null : Number(x));
+  return (v.items ?? []).map((it) => ({
+    videoId: it.id,
+    title: decodeEntities(it.snippet?.title ?? ''),
+    channelTitle: it.snippet?.channelTitle ?? '',
+    publishedAt: it.snippet?.publishedAt ?? '',
+    url: `https://www.youtube.com/watch?v=${encodeURIComponent(it.id)}`,
+    views: num(it.statistics?.viewCount),
+    likes: num(it.statistics?.likeCount),
+    commentCount: num(it.statistics?.commentCount),
+    durationSeconds: isoSeconds(it.contentDetails?.duration),
+  }));
+}
+
+export interface VideoComment {
+  text: string;
+  likes: number;
+}
+
+/** The most relevant top-level comments (1 quota unit). Comments turned off → empty list. */
+export async function topComments(videoId: string, key: string, fetchImpl: FetchFn = fetch, max = 40): Promise<VideoComment[]> {
+  try {
+    const r = await call<{ items?: { snippet?: { topLevelComment?: { snippet?: { textDisplay?: string; textOriginal?: string; likeCount?: number } } } }[] }>(
+      'commentThreads',
+      { part: 'snippet', videoId, order: 'relevance', maxResults: String(max), textFormat: 'plainText' },
+      key,
+      fetchImpl,
+    );
+    return (r.items ?? [])
+      .map((i) => i.snippet?.topLevelComment?.snippet)
+      .filter((s): s is NonNullable<typeof s> => !!s)
+      .map((s) => ({ text: decodeEntities(s.textOriginal ?? s.textDisplay ?? '').replace(/\s+/g, ' ').trim().slice(0, 400), likes: s.likeCount ?? 0 }))
+      .filter((c) => c.text.length > 0);
+  } catch (e) {
+    // commentsDisabled comes back as 403 with the key otherwise fine
+    if (e instanceof YouTubeError && e.kind === 'bad_key') return [];
+    throw e;
+  }
+}

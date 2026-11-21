@@ -82,11 +82,12 @@ export const INTEGRATIONS: IntegrationDef[] = [
     connectable: true,
     isConfigured: (cfg) => !!cfg.encryptionKey,
     describe: {
-      name: 'YouTube (vetted coaching channels)',
+      name: 'YouTube (coaching videos and Coach research)',
       module: 'sports',
       status: 'available',
       implemented: [
-        'Finds videos for your focus skills — but only from vetted channels (national governing bodies and established coaching channels), never all of YouTube.',
+        'Finds videos for your focus skills, only from vetted channels (national governing bodies and established coaching channels).',
+        'Lets Coach research YouTube: it searches with safe search on, reads view and like counts and the top comments, and only recommends drills whose comments report real results and that hold up in real games.',
         'Each channel is checked at runtime: if its name doesn’t match what’s expected, it’s ignored.',
         'Results are cached for a week to stay within YouTube’s free daily quota. Safe search is always on.',
       ],

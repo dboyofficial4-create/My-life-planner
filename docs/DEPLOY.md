@@ -70,6 +70,7 @@ Gmail allows a few hundred emails a day, plenty for this. Any other email provid
 | `SIGNUP_CODE` | If set, sign-up requires it |
 | `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` | Server-wide AI keys (optional) |
 | `COACH_DAILY_LIMIT` | Coach questions per person per day (default 40) |
+| `YOUTUBE_API_KEY` | YouTube Data API key for Coach's video research (optional) |
 | `VAPID_SUBJECT` | Contact for push services |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Email for reset links (optional) |
 | `APP_ENCRYPTION_KEY` | Optional; otherwise created on the disk the first time |

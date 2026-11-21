@@ -37,6 +37,7 @@ const appConfig: AppConfig = {
   canvas,
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || undefined,
   geminiApiKey: process.env.GEMINI_API_KEY || undefined,
+  coachDailyLimit: Number(process.env.COACH_DAILY_LIMIT) > 0 ? Number(process.env.COACH_DAILY_LIMIT) : undefined,
   vapid: loadOrCreateVapidKeys(join(dirname(dbPath), '.vapid-keys.json')),
   vapidSubject: process.env.VAPID_SUBJECT || 'mailto:waypoint@example.com',
   mailer: smtpMailerFromEnv(process.env),

@@ -18,6 +18,7 @@ import { notificationRoutes } from './routes/notifications';
 import { appCsp, SECURITY_HEADERS, welcomeCsp } from './security';
 import { lookRoutes } from './routes/looks';
 import { athleteRoutes } from './routes/athlete';
+import { coachRoutes } from './routes/coach';
 
 export interface AppConfig {
   /** Secure cookies (HTTPS). True in production. */
@@ -32,6 +33,9 @@ export interface AppConfig {
   /** AI study-set generator factory (overridden in tests). */
   studyAI?: import('./services/studyAI').StudyAIFactory;
   lookAI?: import('./services/lookAI').LookAIFactory;
+  coachAI?: import('./services/coachAI').CoachAIFactory;
+  /** Coach questions per person per day (COACH_DAILY_LIMIT, default 40). Keeps your AI bill predictable. */
+  coachDailyLimit?: number;
   /** Web Push (reminders). Created on first start next to the database. */
   vapid?: import('./integrations/webpush').VapidKeys;
   /** Contact for push services, e.g. mailto:you@example.com (VAPID_SUBJECT). */
@@ -132,6 +136,7 @@ export function createApp(db: Db, config: AppConfig) {
   app.route('/api', notificationRoutes);
   app.route('/api', lookRoutes);
   app.route('/api', athleteRoutes);
+  app.route('/api', coachRoutes);
   app.route('/api', accountRoutes);
   app.all('/api/*', () => {
     throw new HttpError(404, 'not_found', 'Not found.');

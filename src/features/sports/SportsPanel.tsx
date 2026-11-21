@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { BookOpen, ExternalLink, Flag, PlayCircle, ShieldCheck, Target, Trash2, TrendingDown, TrendingUp, Trophy } from 'lucide-react';
+import { BookOpen, ExternalLink, Flag, MessageCircle, PlayCircle, ShieldCheck, Sparkles, Target, Trash2, TrendingDown, TrendingUp, Trophy } from 'lucide-react';
 import { useState } from 'react';
 import type { Drill, Skill, SkillTest, SourceRef } from '@shared/domain/sports/catalog';
 import { pitchSmartRest } from '@shared/domain/sports/catalog';
 import type { SportsPrefs } from '@shared/schemas';
 import { api, errorMessage, fieldErrors } from '@/lib/api';
+import { askCoach } from '@/lib/coach';
 import { dayLabel } from '@/lib/format';
 import { useToast } from '@/ui/overlay';
 import { Badge, Button, Callout, Card, Chips, EmptyState, ErrorState, Field, Input, NumberInput, Skeleton } from '@/ui/primitives';
@@ -28,6 +29,9 @@ interface SportView {
   tryout: { phase: string; daysLeft: number | null; label: string; focus: string };
   dose: { sessions: number; minutes: number };
   cutSteps: { title: string; detail: string }[];
+  priorities: { skill: string; label: string; score: number; reasons: string[]; trend: 'down' | 'flat' | 'up' | 'none'; level: 1 | 2 | 3 }[];
+  week: { skill: string; label: string; why: string; drills: { id: string; name: string; minutes: number; solo: boolean; level: number }[] }[];
+  positionInfo: { name: string; blurb: string; conditioning: string; strength: string; advanced: boolean }[];
 }
 interface SportsData {
   today: string;
@@ -60,14 +64,14 @@ export function SportsPanel() {
 }
 
 function SportCard({ s, data }: { s: SportView; data: SportsData }) {
-  const [skill, setSkill] = useState<string>(s.focus[0] ?? s.skills[0]!.id);
+  const [skill, setSkill] = useState<string>(s.priorities[0]?.skill ?? s.focus[0] ?? s.skills[0]!.id);
   const drills = s.drills.filter((d) => d.skill === skill);
   const dev = s.status.development;
   return (
     <section className="stack-lg" aria-label={s.label}>
       <div className="row-wrap between">
         <div className="stack-sm" style={{ gap: 2 }}>
-          <h2 className="row-sm"><Trophy aria-hidden style={{ width: 18, color: 'var(--cat-sport)' }} />{s.label}{s.prefs.position && <span className="subtle small">· {s.prefs.position}</span>}</h2>
+          <h2 className="row-sm"><Trophy aria-hidden style={{ width: 18, color: 'var(--cat-sport)' }} />{s.label}{s.prefs.position && <span className="subtle small">· {[s.prefs.position, s.prefs.secondaryPosition].filter(Boolean).join(' + ')}</span>}</h2>
           <p className="small muted">{s.status.label} · this week: {s.dose.sessions} skill session{s.dose.sessions === 1 ? '' : 's'} of about {s.dose.minutes} min</p>
         </div>
         <Link to="/settings/fitness" className="btn btn-secondary btn-sm">Edit</Link>
@@ -90,6 +94,8 @@ function SportCard({ s, data }: { s: SportView; data: SportsData }) {
           </div>
         </Card>
       )}
+
+      <ForYou s={s} onPick={setSkill} />
 
       <Card title={<span className="row-sm"><Target aria-hidden style={{ width: 16 }} /> Skills & drills</span>}>
         <div className="stack">
@@ -284,6 +290,79 @@ function PitchCalculator({ age }: { age: number | null }) {
         <p className="xsmall subtle">
           From the MLB & USA Baseball Pitch Smart guidelines — <a href="https://www.mlb.com/pitch-smart/pitching-guidelines" target="_blank" rel="noopener noreferrer">check the official tables</a>. If your league’s rules are stricter, follow your league.
         </p>
+      </div>
+    </Card>
+  );
+}
+
+const TREND_TEXT = { down: 'Dropping', flat: 'Stalled', up: 'Improving', none: '' } as const;
+
+
+function ForYou({ s, onPick }: { s: SportView; onPick: (skill: string) => void }) {
+  const top = s.priorities.filter((p) => p.score > 0);
+  const pos = [s.prefs.position, s.prefs.secondaryPosition].filter(Boolean).join(' and ');
+  const weakest = top[0];
+  return (
+    <Card title={<span className="row-sm"><Sparkles aria-hidden style={{ width: 16 }} /> Built for you</span>}>
+      <div className="stack-lg">
+        {s.positionInfo.length > 0 ? (
+          <div className="grid-2">
+            {s.positionInfo.map((p) => (
+              <div key={p.name} className="stack-sm foryou-pos">
+                <span className="eyebrow">{p.advanced ? 'Advanced role' : 'Position'}</span>
+                <span className="strong">{p.name}</span>
+                <p className="small muted">{p.blurb}</p>
+                <p className="xsmall"><span className="subtle">Conditioning:</span> {p.conditioning}</p>
+                <p className="xsmall"><span className="subtle">Strength focus:</span> {p.strength}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="small muted">Add your position in <Link to="/settings/fitness">Edit</Link> to get skills and drills for your role.</p>
+        )}
+
+        {top.length > 0 && (
+          <div className="stack-sm">
+            <span className="eyebrow">What you need most right now</span>
+            <ol className="foryou-list">
+              {top.map((p) => (
+                <li key={p.skill}>
+                  <button type="button" className="foryou-skill" onClick={() => onPick(p.skill)}>
+                    <span className="strong small">{p.label}</span>
+                    {p.trend !== 'none' && <Badge tone={p.trend === 'down' ? 'danger' : p.trend === 'flat' ? 'warning' : 'success'} outline>{TREND_TEXT[p.trend]}</Badge>}
+                    <Badge outline>{['', 'Basic', 'Intermediate', 'Advanced'][p.level]} drills</Badge>
+                  </button>
+                  <span className="xsmall subtle">{p.reasons.join(' · ')}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="xsmall subtle">Ranked from your position, the skills you picked, your coach’s feedback and your own test results. Log tests below and this updates.</p>
+          </div>
+        )}
+
+        {s.week.length > 0 && (
+          <div className="stack-sm">
+            <span className="eyebrow">This week’s sessions</span>
+            <ol className="foryou-week">
+              {s.week.map((w, i) => (
+                <li key={i}>
+                  <span className="strong small">{w.label}</span>
+                  <span className="small muted">{w.drills.map((d) => `${d.name} (${d.minutes} min)`).join(' → ')}</span>
+                  <span className="xsmall subtle">{w.why}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="xsmall subtle">Drills rotate each week and get harder as your test results improve. Planned sessions in your week use exactly these.</p>
+          </div>
+        )}
+
+        {weakest && (
+          <div className="row-wrap">
+            <Link className="btn btn-secondary btn-sm" to={askCoach(`Research the best drills to improve my ${weakest.label.toLowerCase()} as a ${s.label.toLowerCase()} ${pos || 'player'}. ${weakest.reasons.length ? `Context: ${weakest.reasons.join(', ')}.` : ''} Give me a 2-week progression I can do mostly on my own.`)}>
+              <MessageCircle aria-hidden style={{ width: 15 }} /> Ask Coach to research {weakest.label.toLowerCase()} drills
+            </Link>
+          </div>
+        )}
       </div>
     </Card>
   );

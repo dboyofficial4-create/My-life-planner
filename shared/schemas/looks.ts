@@ -81,12 +81,25 @@ export const BUILD_GOAL_LABELS: Record<(typeof BUILD_GOALS)[number], string> = {
   posture: 'Better posture and core',
 };
 
+/** Goal photos: at least two, so the plan reads the build from several angles instead of one posed shot. */
+export const MIN_GOAL_PHOTOS = 2;
+export const MAX_GOAL_PHOTOS = 4;
+export const MAX_CURRENT_PHOTOS = 3;
+
 export const BuildPlanInput = z.object({
-  currentPhoto: PhotoInput.nullable(),
-  goalPhoto: PhotoInput.nullable(),
-  goals: z.array(z.enum(BUILD_GOALS)).max(BUILD_GOALS.length),
+  /** Photos of the user now (adults only): front, side, back. */
+  currentPhotos: z.array(PhotoInput).max(MAX_CURRENT_PHOTOS).default([]),
+  /** Photos of the build they want (14+). None, or 2 to 4. */
+  goalPhotos: z
+    .array(PhotoInput)
+    .max(MAX_GOAL_PHOTOS, `Use up to ${MAX_GOAL_PHOTOS} goal photos`)
+    .default([])
+    .refine((a) => a.length === 0 || a.length >= MIN_GOAL_PHOTOS, { message: `Add at least ${MIN_GOAL_PHOTOS} photos of the build you want: different angles give a much better plan` }),
+  goals: z.array(z.enum(BUILD_GOALS)).max(BUILD_GOALS.length).default([]),
   /** One of BUILD_ARCHETYPES (shared/domain/fitness/builds.ts). */
   archetype: z.string().max(40).nullable().default(null),
+  /** The sport and position the build was picked for, e.g. "American football: Wide receiver + Cornerback". */
+  forPosition: z.string().trim().max(120).default(''),
   description: z.string().trim().max(600),
   consent: z.literal(true, { error: 'Please confirm the details can be sent to the AI service' }),
   photoRules: z.boolean().default(false),

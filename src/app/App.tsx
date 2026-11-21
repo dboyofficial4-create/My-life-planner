@@ -22,6 +22,7 @@ const FoodPage = lazy(() => import('@/features/food/FoodPage'));
 const CarePage = lazy(() => import('@/features/care/CarePage'));
 const ProgressPage = lazy(() => import('@/features/progress/ProgressPage'));
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
+const CoachPage = lazy(() => import('@/features/coach/CoachPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,6 +79,7 @@ export function App() {
                 <Route element={<Shell />}>
                   <Route index element={<TodayPage />} />
                   <Route path="plan" element={<PlanPage />} />
+                  <Route path="coach" element={<CoachPage />} />
                   <Route path="fitness" element={<ModuleRoute modules={['fitness', 'sports']}><FitnessPage /></ModuleRoute>} />
                   <Route path="school" element={<ModuleRoute modules={['school']}><SchoolPage /></ModuleRoute>} />
                   <Route path="school/study" element={<ModuleRoute modules={['school']}><StudyGuidePage /></ModuleRoute>} />

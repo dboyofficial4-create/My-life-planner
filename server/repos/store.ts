@@ -913,6 +913,69 @@ export class UserStore {
     return this.db.run('DELETE FROM progress_logs WHERE id = ? AND user_id = ?', id, this.userId).changes > 0;
   }
 
+  /* ---------- AI coach ---------- */
+
+  coachConsent(): { provider: string; consentedAt: number } | null {
+    const r = this.db.get<{ provider: string; consented_at: number }>('SELECT provider, consented_at FROM coach_consent WHERE user_id = ?', this.userId);
+    return r ? { provider: r.provider, consentedAt: r.consented_at } : null;
+  }
+
+  setCoachConsent(provider: string) {
+    this.db.run('INSERT INTO coach_consent (user_id, provider, consented_at) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET provider = excluded.provider, consented_at = excluded.consented_at', this.userId, provider, Date.now());
+  }
+
+  coachThreads(limit = 50) {
+    return this.db
+      .all<{ id: string; title: string; created_at: number; updated_at: number }>('SELECT id, title, created_at, updated_at FROM coach_threads WHERE user_id = ? ORDER BY updated_at DESC LIMIT ?', this.userId, limit)
+      .map((r) => ({ id: r.id, title: r.title, createdAt: r.created_at, updatedAt: r.updated_at }));
+  }
+
+  coachThread(id: string) {
+    const r = this.db.get<{ id: string; title: string; created_at: number; updated_at: number }>('SELECT id, title, created_at, updated_at FROM coach_threads WHERE id = ? AND user_id = ?', id, this.userId);
+    return r ? { id: r.id, title: r.title, createdAt: r.created_at, updatedAt: r.updated_at } : null;
+  }
+
+  createCoachThread(title: string) {
+    const id = uid();
+    const t = Date.now();
+    this.db.run('INSERT INTO coach_threads (id, user_id, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?)', id, this.userId, title, t, t);
+    // keep the 50 most recent conversations
+    this.db.run('DELETE FROM coach_threads WHERE user_id = ? AND id NOT IN (SELECT id FROM coach_threads WHERE user_id = ? ORDER BY updated_at DESC LIMIT 50)', this.userId, this.userId);
+    return { id, title, createdAt: t, updatedAt: t };
+  }
+
+  coachMessages(threadId: string, limit = 200) {
+    return this.db
+      .all<{ id: string; role: 'user' | 'assistant'; content: string; sources: string; created_at: number }>(
+        'SELECT id, role, content, sources, created_at FROM (SELECT * FROM coach_messages WHERE thread_id = ? AND user_id = ? ORDER BY created_at DESC LIMIT ?) ORDER BY created_at',
+        threadId, this.userId, limit,
+      )
+      .map((r) => ({ id: r.id, role: r.role, content: r.content, sources: parseJson<{ title: string; url: string }[]>(r.sources, []), createdAt: r.created_at }));
+  }
+
+  addCoachMessage(threadId: string, role: 'user' | 'assistant', content: string, sources: { title: string; url: string }[] = []) {
+    const id = uid();
+    const t = Date.now();
+    this.tx(() => {
+      this.db.run('INSERT INTO coach_messages (id, thread_id, user_id, role, content, sources, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)', id, threadId, this.userId, role, content, json(sources), t);
+      this.db.run('UPDATE coach_threads SET updated_at = ? WHERE id = ? AND user_id = ?', t, threadId, this.userId);
+    });
+    return { id, role, content, sources, createdAt: t };
+  }
+
+  /** Questions asked since a time (for the daily limit). */
+  coachQuestionsSince(since: number): number {
+    return this.db.get<{ n: number }>("SELECT COUNT(*) AS n FROM coach_messages WHERE user_id = ? AND role = 'user' AND created_at >= ?", this.userId, since)?.n ?? 0;
+  }
+
+  deleteCoachThread(id: string): boolean {
+    return this.db.run('DELETE FROM coach_threads WHERE id = ? AND user_id = ?', id, this.userId).changes > 0;
+  }
+
+  deleteAllCoachThreads() {
+    return this.db.run('DELETE FROM coach_threads WHERE user_id = ?', this.userId).changes;
+  }
+
   /* ---------- export ---------- */
 
   exportAll() {
@@ -941,6 +1004,8 @@ export class UserStore {
       notifications: t('notifications', 'kind, title, body, url, created_at, read_at'),
       lookReports: t('look_reports', 'kind, used_photos, result, created_at'),
       readiness: t('readiness', 'date, answers, score, level, plan, created_at'),
+      coachThreads: t('coach_threads', 'id, title, created_at, updated_at'),
+      coachMessages: t('coach_messages', 'thread_id, role, content, sources, created_at'),
     };
   }
 }

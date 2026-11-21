@@ -1,16 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { CalendarDays, Clock, Images, HeartPulse, RotateCcw, ShieldAlert, Target, TrendingUp, Utensils } from 'lucide-react';
-import { type BuildPlan, type LookReport } from '@shared/schemas/looks';
-import { archetypeById, BUILD_ARCHETYPES } from '@shared/domain/fitness/builds';
+import { MAX_GOAL_PHOTOS, MIN_GOAL_PHOTOS, type BuildPlan, type LookReport } from '@shared/schemas/looks';
+import { archetypeById, BUILD_ARCHETYPES, type BuildArchetype } from '@shared/domain/fitness/builds';
+import { POSITIONS, buildsForPositions, positionInfo, type PositionInfo } from '@shared/domain/sports/positions';
+import type { SportId } from '@shared/domain/sports/catalog';
+import { SPORT_LABELS } from '@shared/domain/fitness/sports';
+import { BuildFigure } from './BuildFigure';
 import clsx from 'clsx';
 import { VaultPicker } from './VaultPicker';
 import { api, errorMessage } from '@/lib/api';
 import { useToast } from '@/ui/overlay';
-import { Button, Callout, Card, Field, Skeleton, Textarea } from '@/ui/primitives';
+import { Button, Callout, Card, Field, Select, Skeleton, Textarea } from '@/ui/primitives';
 import { AiNotReady, consentText, PhotoPrivacy, PhotoSlot, PhotoRulesCheck, when, type PickedPhoto, type Provider } from './shared';
 
-type Info = { provider: Provider; report: LookReport<BuildPlan> | null; photosAllowed: boolean; goalPhotoAllowed: boolean; aiReady: boolean };
+type SportRef = { sport: SportId; position: string; secondaryPosition: string };
+type Info = { provider: Provider; report: LookReport<BuildPlan> | null; photosAllowed: boolean; goalPhotoAllowed: boolean; aiReady: boolean; sports: SportRef[] };
 
 export function BuildPlanner() {
   const q = useQuery({ queryKey: ['looks', 'build'], queryFn: () => api.get<Info>('/looks/build') });
@@ -19,29 +24,61 @@ export function BuildPlanner() {
   if (q.error) return <Callout tone="danger">{errorMessage(q.error)}</Callout>;
   const d = q.data;
   if (!d.aiReady) return <AiNotReady />;
-  return d.report && !editing ? <BuildResult r={d.report} onAgain={() => setEditing(true)} /> : <BuildForm photosAllowed={d.photosAllowed} goalAllowed={d.goalPhotoAllowed} provider={d.provider} onDone={() => setEditing(false)} />;
+  return d.report && !editing ? <BuildResult r={d.report} onAgain={() => setEditing(true)} /> : <BuildForm info={d} onDone={() => setEditing(false)} />;
 }
 
-function BuildForm({ photosAllowed, goalAllowed, provider, onDone }: { photosAllowed: boolean; goalAllowed: boolean; provider: Provider; onDone: () => void }) {
+const SPORT_IDS = (Object.keys(POSITIONS) as SportId[]).filter((s) => POSITIONS[s].length > 0);
+const GOAL_SLOTS = ['Goal photo 1', 'Goal photo 2', 'Goal photo 3 (optional)', 'Goal photo 4 (optional)'];
+const CURRENT_SLOTS = [
+  { label: 'Front', hint: 'Facing the camera, arms relaxed' },
+  { label: 'Side (optional)', hint: 'Turned sideways' },
+  { label: 'Back (optional)', hint: 'Facing away' },
+];
+
+function BuildForm({ info, onDone }: { info: Info; onDone: () => void }) {
+  const { photosAllowed, goalPhotoAllowed: goalAllowed, provider } = info;
   const qc = useQueryClient();
   const toast = useToast();
+  const mine = info.sports.find((s) => POSITIONS[s.sport]?.length);
+  const [mode, setMode] = useState<'sport' | 'everyday' | 'photos'>(mine ? 'sport' : 'everyday');
+  const [sport, setSport] = useState<SportId>(mine?.sport ?? 'american_football');
+  const [position, setPosition] = useState(positionInfo(sport, mine?.position)?.name ?? '');
+  const [position2, setPosition2] = useState(positionInfo(sport, mine?.secondaryPosition)?.name ?? '');
   const [archetype, setArchetype] = useState<string | null>(null);
-  const [current, setCurrent] = useState<PickedPhoto | null>(null);
-  const [goal, setGoal] = useState<PickedPhoto | null>(null);
+  const [goals, setGoals] = useState<(PickedPhoto | null)[]>([null, null, null, null]);
+  const [current, setCurrent] = useState<(PickedPhoto | null)[]>([null, null, null]);
   const [fromVault, setFromVault] = useState(false);
   const [description, setDescription] = useState('');
   const [consent, setConsent] = useState(false);
   const [photoRules, setPhotoRules] = useState(false);
-  const strip = (p: PickedPhoto | null) => (p ? { mediaType: p.mediaType, data: p.data } : null);
+  const goalPhotos = mode === 'photos' ? goals.filter((p): p is PickedPhoto => !!p) : [];
+  const currentPhotos = current.filter((p): p is PickedPhoto => !!p);
+  const strip = (p: PickedPhoto) => ({ mediaType: p.mediaType, data: p.data });
+  const options = mode === 'sport' && position ? buildsForPositions(sport, [position, position2]) : [];
+  const chosenOption = options.find((o) => o.id === archetype);
+  const forPosition = mode === 'sport' && chosenOption ? `${SPORT_LABELS[sport]}: ${[position, position2].filter(Boolean).join(' + ')}` : '';
   const go = useMutation({
-    mutationFn: () => api.post('/looks/build', { currentPhoto: strip(current), goalPhoto: strip(goal), archetype, goals: [], description, consent, photoRules }),
+    mutationFn: () =>
+      api.post('/looks/build', {
+        currentPhotos: currentPhotos.map(strip),
+        goalPhotos: goalPhotos.map(strip),
+        archetype: mode === 'photos' ? null : archetype,
+        forPosition,
+        goals: [],
+        description,
+        consent,
+        photoRules,
+      }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['looks', 'build'] }); onDone(); },
     onError: (e) => toast({ message: errorMessage(e), tone: 'error' }),
   });
-  const hasPhoto = !!(current || goal);
-  const ready = !!archetype || !!goal || description.trim().length > 0;
+  const hasPhoto = goalPhotos.length > 0 || currentPhotos.length > 0;
+  const goalShort = mode === 'photos' && goalPhotos.length > 0 && goalPhotos.length < MIN_GOAL_PHOTOS;
+  const ready = mode === 'photos' ? goalPhotos.length >= MIN_GOAL_PHOTOS || (goalPhotos.length === 0 && description.trim().length > 0) : !!archetype || description.trim().length > 0;
   const chosen = archetypeById(archetype);
-  const pick = (id: string) => { setArchetype((a) => (a === id ? null : id)); setGoal(null); };
+  const pick = (id: string) => setArchetype((a) => (a === id ? null : id));
+  const setSlot = (list: (PickedPhoto | null)[], set: (v: (PickedPhoto | null)[]) => void, i: number, p: PickedPhoto | null) => set(list.map((x, j) => (j === i ? p : x)));
+  const sportPositions = POSITIONS[sport];
   return (
     <Card>
       <form className="stack-lg" onSubmit={(e) => { e.preventDefault(); go.mutate(); }}>
@@ -49,33 +86,81 @@ function BuildForm({ photosAllowed, goalAllowed, provider, onDone }: { photosAll
 
         <section className="stack">
           <h3 className="build-step"><span>1</span> Choose your goal build</h3>
-          {(['sport', 'everyday'] as const).map((group) => (
-            <div key={group} className="stack-sm">
-              <span className="xsmall subtle">{group === 'sport' ? 'Built like an athlete' : 'Popular everyday looks'}</span>
-              <div className="build-grid" role="radiogroup" aria-label={group === 'sport' ? 'Athlete builds' : 'Everyday builds'}>
-                {BUILD_ARCHETYPES.filter((a) => a.group === group).map((a) => (
-                  <button key={a.id} type="button" role="radio" aria-checked={archetype === a.id} className={clsx('build-card', archetype === a.id && 'is-on')} onClick={() => pick(a.id)}>
-                    <span className="build-card__name">{a.name}</span>
-                    <span className="xsmall subtle">{a.seenIn}</span>
-                    <ul className="build-card__look">{a.look.map((l) => <li key={l}>{l}</li>)}</ul>
-                  </button>
-                ))}
+          <div className="tabs" role="tablist" aria-label="How to choose">
+            {([['sport', 'For my sport and position'], ['everyday', 'Popular looks'], ...(goalAllowed ? [['photos', 'From my own photos']] : [])] as [typeof mode, string][]).map(([m, label]) => (
+              <button key={m} type="button" role="tab" aria-selected={mode === m} className={clsx('tab', mode === m && 'is-active')} onClick={() => { setMode(m); setArchetype(null); }}>{label}</button>
+            ))}
+          </div>
+
+          {mode === 'sport' && (
+            <div className="stack">
+              <div className="grid-3 build-pickers">
+                <Field label="Sport">
+                  {(p) => (
+                    <Select {...p} value={sport} onChange={(e) => { const sp = e.target.value as SportId; setSport(sp); setPosition(''); setPosition2(''); setArchetype(null); }}>
+                      {SPORT_IDS.map((x) => <option key={x} value={x}>{SPORT_LABELS[x]}</option>)}
+                    </Select>
+                  )}
+                </Field>
+                <Field label="Position">
+                  {(p) => (
+                    <Select {...p} value={position} onChange={(e) => { setPosition(e.target.value); setArchetype(null); }}>
+                      <option value="">Choose…</option>
+                      <PositionOptions list={sportPositions} exclude={position2} />
+                    </Select>
+                  )}
+                </Field>
+                <Field label="Second position" optional hint="If you play both ways">
+                  {(p) => (
+                    <Select {...p} value={position2} disabled={!position} onChange={(e) => { setPosition2(e.target.value); setArchetype(null); }}>
+                      <option value="">None</option>
+                      <PositionOptions list={sportPositions} exclude={position} />
+                    </Select>
+                  )}
+                </Field>
               </div>
+              {position && <p className="xsmall subtle">{[position, position2].filter(Boolean).map((n) => positionInfo(sport, n)?.blurb).filter(Boolean).join(' ')}</p>}
+              {options.length > 0 ? (
+                <>
+                  <p className="small"><span className="strong">The 5 best builds for {[position, position2].filter(Boolean).join(' + ').toLowerCase()}</span><span className="muted">, best first. Blue shows where each build carries its muscle; the dashed line is average height.</span></p>
+                  <div className="build-grid build-grid--figs" role="radiogroup" aria-label="Builds for your position">
+                    {options.map((o, i) => {
+                      const b = archetypeById(o.id)!;
+                      return <BuildOption key={o.id} b={b} rank={i + 1} why={o.why} on={archetype === o.id} onPick={() => pick(o.id)} />;
+                    })}
+                  </div>
+                </>
+              ) : (
+                <p className="small muted">Choose your position to see the builds that suit it.</p>
+              )}
             </div>
-          ))}
-          {chosen && (
+          )}
+
+          {mode === 'everyday' && (
+            <div className="build-grid build-grid--figs" role="radiogroup" aria-label="Popular looks">
+              {BUILD_ARCHETYPES.filter((a) => a.group === 'everyday' || a.id === 'gymnast').map((b) => (
+                <BuildOption key={b.id} b={b} on={archetype === b.id} onPick={() => pick(b.id)} />
+              ))}
+            </div>
+          )}
+
+          {mode !== 'photos' && chosen && (
             <div className="build-chosen">
               <span className="strong">{chosen.name}: how they train</span>
               <ul className="small" style={{ paddingLeft: 18 }}>{chosen.training.map((t) => <li key={t}>{t}</li>)}</ul>
               <span className="xsmall muted">{chosen.realityCheck}</span>
             </div>
           )}
-          {goalAllowed && (
+
+          {mode === 'photos' && goalAllowed && (
             <div className="stack-sm">
-              <span className="xsmall subtle">Or use your own picture of the build you want</span>
-              <div className="photo-row photo-row--two">
-                <PhotoSlot label="Goal build photo" hint="Any photo of the look you’re aiming for, fully clothed" value={goal} onChange={(p) => { setGoal(p); if (p) setArchetype(null); }} />
+              <p className="small">Add <span className="strong">at least {MIN_GOAL_PHOTOS}</span> photos of the build you want (up to {MAX_GOAL_PHOTOS}). Different angles, or a few people with the same build, show the AI what’s real and what’s just one good pose or lighting.</p>
+              <div className="photo-row photo-row--four">
+                {GOAL_SLOTS.map((label, i) => (
+                  <PhotoSlot key={label} label={label} hint={i < 2 ? 'Fully clothed sportswear' : undefined} value={goals[i] ?? null} onChange={(p) => setSlot(goals, setGoals, i, p)} />
+                ))}
               </div>
+              {goalShort && <p className="xsmall" style={{ color: 'var(--danger)' }}>Add {MIN_GOAL_PHOTOS - goalPhotos.length} more photo to continue.</p>}
             </div>
           )}
         </section>
@@ -84,22 +169,25 @@ function BuildForm({ photosAllowed, goalAllowed, provider, onDone }: { photosAll
           <h3 className="build-step"><span>2</span> Where you’re starting</h3>
           {photosAllowed ? (
             <div className="stack-sm">
-              <div className="photo-row photo-row--two">
-                <PhotoSlot label="You now" hint="Fitted athletic clothes, front-on, good light" capture="environment" value={current} onChange={setCurrent} />
+              <p className="xsmall subtle">Optional. More angles give a better read; a front photo alone works too.</p>
+              <div className="photo-row">
+                {CURRENT_SLOTS.map((s, i) => (
+                  <PhotoSlot key={s.label} label={s.label} hint={s.hint} capture="environment" value={current[i] ?? null} onChange={(p) => setSlot(current, setCurrent, i, p)} />
+                ))}
               </div>
-              {!current && !fromVault && <div><Button size="sm" variant="ghost" icon={Images} onClick={() => setFromVault(true)}>Use one of my progress photos</Button></div>}
-              {!current && fromVault && <VaultPicker onPick={(p) => { setCurrent(p); setFromVault(false); }} onCancel={() => setFromVault(false)} />}
+              {current.some((p) => !p) && !fromVault && <div><Button size="sm" variant="ghost" icon={Images} onClick={() => setFromVault(true)}>Use one of my progress photos</Button></div>}
+              {fromVault && <VaultPicker onPick={(p) => { const i = current.findIndex((x) => !x); if (i >= 0) setSlot(current, setCurrent, i, p); setFromVault(false); }} onCancel={() => setFromVault(false)} />}
             </div>
           ) : (
             <p className="xsmall subtle">{goalAllowed ? 'Photos of yourself are for ages 18 and up, so describe where you’re starting. Your Progress photos stay on your device to track changes.' : 'Describe where you’re starting.'}</p>
           )}
-          <Field label="In your words" optional={!!archetype || !!goal}>{(p) => <Textarea {...p} rows={2} value={description} maxLength={600} placeholder="e.g. 5’10”, skinny arms, decent legs from soccer; want more upper body and a faster first step" onChange={(e) => setDescription(e.target.value)} />}</Field>
+          <Field label="In your words" optional={ready && mode !== 'photos' ? true : goalPhotos.length >= MIN_GOAL_PHOTOS}>{(p) => <Textarea {...p} rows={2} value={description} maxLength={600} placeholder="e.g. 5’10”, skinny arms, decent legs from soccer; want more upper body and a faster first step" onChange={(e) => setDescription(e.target.value)} />}</Field>
         </section>
 
         {hasPhoto && (
           <div className="stack-sm">
             <PhotoPrivacy photosAllowed provider={provider} />
-            <PhotoRulesCheck checked={photoRules} onChange={setPhotoRules} rule={current ? 'me, fully clothed in athletic wear, nothing revealing.' : 'a clothed person in sportswear, nothing revealing.'} />
+            <PhotoRulesCheck checked={photoRules} onChange={setPhotoRules} rule={currentPhotos.length ? 'me, fully clothed in athletic wear, nothing revealing.' : 'clothed people in sportswear, nothing revealing.'} />
           </div>
         )}
         <label className="checkbox">
@@ -107,11 +195,39 @@ function BuildForm({ photosAllowed, goalAllowed, provider, onDone }: { photosAll
           <span className="small">{consentText(provider, hasPhoto, 'plan')}</span>
         </label>
         <div className="row-wrap">
-          <Button type="submit" variant="primary" icon={Target} loading={go.isPending} disabled={!consent || !ready || (hasPhoto && !photoRules)}>{go.isPending ? 'Planning… (about 30 seconds)' : 'Make my plan'}</Button>
-          {!ready && <span className="xsmall subtle">Choose a build, add a goal photo, or describe it.</span>}
+          <Button type="submit" variant="primary" icon={Target} loading={go.isPending} disabled={!consent || !ready || goalShort || (hasPhoto && !photoRules)}>{go.isPending ? 'Planning… (about 30 seconds)' : 'Make my plan'}</Button>
+          {!ready && <span className="xsmall subtle">{mode === 'photos' ? `Add at least ${MIN_GOAL_PHOTOS} goal photos, or describe the build.` : 'Choose a build or describe it.'}</span>}
         </div>
       </form>
     </Card>
+  );
+}
+
+function PositionOptions({ list, exclude }: { list: PositionInfo[]; exclude?: string }) {
+  const keep = list.filter((x) => x.name !== exclude);
+  return (
+    <>
+      <optgroup label="Positions">{keep.filter((x) => !x.advanced).map((x) => <option key={x.name} value={x.name}>{x.name}</option>)}</optgroup>
+      {keep.some((x) => x.advanced) && <optgroup label="Advanced and modern roles">{keep.filter((x) => x.advanced).map((x) => <option key={x.name} value={x.name}>{x.name}</option>)}</optgroup>}
+    </>
+  );
+}
+
+function BuildOption({ b, rank, why, on, onPick }: { b: BuildArchetype; rank?: number; why?: string; on: boolean; onPick: () => void }) {
+  return (
+    <button type="button" role="radio" aria-checked={on} className={clsx('build-card build-card--fig', on && 'is-on')} onClick={onPick}>
+      <BuildFigure build={b} />
+      <span className="build-card__body">
+        {rank && <span className="build-card__rank mono">No. {rank}</span>}
+        <span className="build-card__name">{b.name}</span>
+        <span className="xsmall subtle">{b.seenIn}</span>
+        {why && <span className="small build-card__why">{why}</span>}
+        <span className="build-card__label">What it gives you</span>
+        <ul className="build-card__look">{b.benefits.map((l) => <li key={l}>{l}</li>)}</ul>
+        <span className="build-card__label">Trade-off</span>
+        <span className="xsmall muted">{b.tradeoffs[0]}</span>
+      </span>
+    </button>
   );
 }
 

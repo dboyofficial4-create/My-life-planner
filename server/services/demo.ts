@@ -34,7 +34,7 @@ export function seedDemo(db: Db, userId: string, now: Date) {
         { kind: 'other', title: 'Tutoring (Chemistry)', recurrence: { type: 'weekly', days: [3] }, start: '16:00', end: '17:00', travelBefore: 0, travelAfter: 0, location: 'Library', intensity: 0 },
       ],
       fitness: { experience: 'some', sessionsPerWeek: 3, sessionMinutes: 45, locations: ['home', 'school_gym'], equipment: ['dumbbells', 'bench', 'resistance_bands', 'pullup_bar'], accessNotes: 'School gym open until 6pm', limitations: [], limitationNotes: '' },
-      sports: { sports: [{ sport: 'soccer', position: 'Midfielder', level: 'school_team', seasonPhase: 'in', goal: 'Better first touch under pressure', teamStatus: 'on_team', tryoutDate: null, skills: ['first_touch', 'passing'], coachFeedback: '' }] },
+      sports: { sports: [{ sport: 'soccer', position: 'Box-to-box midfielder', secondaryPosition: '', level: 'school_team', seasonPhase: 'in', goal: 'Better first touch under pressure', teamStatus: 'on_team', tryoutDate: null, skills: ['first_touch', 'passing'], coachFeedback: '' }] },
       school: { stage: 'high_school', gradeLevel: '11', dailyStudyMinutes: 45, academicGoal: 'B+ or better in every class' },
       courses: [
         { name: 'Chemistry', difficulty: 4, targetGrade: 87 },

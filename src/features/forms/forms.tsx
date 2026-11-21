@@ -7,11 +7,12 @@ import {
 } from '@shared/schemas';
 import { WEEK_ORDER, WEEKDAY_SHORT } from '@shared/domain/time';
 import { SPORT_LABELS } from '@shared/domain/fitness/sports';
-import { SPORTS_CATALOG } from '@shared/domain/sports/catalog';
+import { SPORTS_CATALOG, type SportId } from '@shared/domain/sports/catalog';
+import { POSITIONS, TWO_WAY, positionInfo } from '@shared/domain/sports/positions';
 import { cmToFeetInches, feetInchesToCm, kgToLb, lbToKg } from '@shared/domain/nutrition/units';
 import type { AgePolicy } from '@shared/domain/age';
 import { Button, Chips, Field, Input, NumberInput, OptionCards, Select, Switch, Textarea, type ChoiceOption } from '@/ui/primitives';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 export type Errors = Record<string, string>;
 
@@ -417,6 +418,7 @@ export function FitnessForm({ value, onChange }: { value: FitnessPrefs; onChange
 /* ---------- Sports ---------- */
 
 export function SportsForm({ value, onChange }: { value: SportsPrefs; onChange: (v: SportsPrefs) => void }) {
+  const [twoWayOpen, setTwoWayOpen] = useState<number[]>([]);
   const update = (i: number, patch: Partial<SportsPrefs['sports'][number]>) => onChange({ sports: value.sports.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
   return (
     <div className="stack-lg">
@@ -434,7 +436,7 @@ export function SportsForm({ value, onChange }: { value: SportsPrefs; onChange: 
             <div className="grid-2">
               <Field label="Sport">
                 {(p) => (
-                  <Select {...p} value={sp.sport} onChange={(e) => update(i, { sport: e.target.value as typeof sp.sport, skills: [], position: '' })}>
+                  <Select {...p} value={sp.sport} onChange={(e) => update(i, { sport: e.target.value as typeof sp.sport, skills: [], position: '', secondaryPosition: '' })}>
                     {SPORTS.map((x) => (
                       <option key={x} value={x}>
                         {SPORT_LABELS[x]}
@@ -443,15 +445,34 @@ export function SportsForm({ value, onChange }: { value: SportsPrefs; onChange: 
                   </Select>
                 )}
               </Field>
-              <Field label="Position or event" optional>
-                {(p) => (
-                  <>
-                    <Input {...p} value={sp.position} maxLength={40} list={`positions-${i}`} onChange={(e) => update(i, { position: e.target.value })} />
-                    <datalist id={`positions-${i}`}>{info.positions.map((x) => <option key={x} value={x} />)}</datalist>
-                  </>
-                )}
-              </Field>
+              <PositionPicker sport={sp.sport} label="Position or event" value={sp.position} onChange={(v) => update(i, { position: v })} />
             </div>
+            {POSITIONS[sp.sport].length > 0 && (
+              <div className="stack-sm">
+                <Switch
+                  label="I play two ways (two positions)"
+                  description="For example receiver and cornerback, or pitcher and outfield. Your skills, drills and builds then cover both."
+                  checked={sp.secondaryPosition !== '' || twoWayOpen.includes(i)}
+                  onChange={(on) => { setTwoWayOpen((o) => (on ? [...o, i] : o.filter((x) => x !== i))); if (!on) update(i, { secondaryPosition: '' }); }}
+                />
+                {(sp.secondaryPosition !== '' || twoWayOpen.includes(i)) && (
+                  <div className="stack-sm">
+                    {(TWO_WAY[sp.sport] ?? []).length > 0 && (
+                      <div className="row-wrap" role="group" aria-label="Common two-way pairs">
+                        {(TWO_WAY[sp.sport] ?? []).map(([a, b]) => (
+                          <button key={`${a}+${b}`} type="button" className={`chip${sp.position === a && sp.secondaryPosition === b ? ' is-on' : ''}`} aria-pressed={sp.position === a && sp.secondaryPosition === b} onClick={() => update(i, { position: a, secondaryPosition: b })}>
+                            {a} + {b}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div className="grid-2">
+                      <PositionPicker sport={sp.sport} label="Second position" value={sp.secondaryPosition} onChange={(v) => update(i, { secondaryPosition: v })} exclude={sp.position} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <Chips
               label="Team situation"
               value={sp.teamStatus}
@@ -496,7 +517,7 @@ export function SportsForm({ value, onChange }: { value: SportsPrefs; onChange: 
         );
       })}
       {value.sports.length < 3 && (
-        <Button icon={Trophy} onClick={() => onChange({ sports: [...value.sports, { sport: 'soccer', position: '', level: 'school_team', seasonPhase: 'in', goal: '', teamStatus: 'on_team', tryoutDate: null, skills: [], coachFeedback: '' }] })}>
+        <Button icon={Trophy} onClick={() => onChange({ sports: [...value.sports, { sport: 'soccer', position: '', secondaryPosition: '', level: 'school_team', seasonPhase: 'in', goal: '', teamStatus: 'on_team', tryoutDate: null, skills: [], coachFeedback: '' }] })}>
           Add a sport
         </Button>
       )}
@@ -655,5 +676,35 @@ export function HairForm({ value, onChange }: { value: HairPrefs; onChange: (v: 
       <Chips label="Main struggles" multiple value={value.concerns} onChange={(v) => s('concerns', v as HairPrefs['concerns'])} options={[{ value: 'frizz', label: 'Frizz' }, { value: 'dryness', label: 'Dryness' }, { value: 'breakage', label: 'Breakage' }, { value: 'oily_scalp', label: 'Oily scalp' }, { value: 'definition', label: 'Curl definition' }, { value: 'tangles', label: 'Tangles' }]} />
       <Chips label="Facial hair" value={value.facialHair} onChange={(v) => s('facialHair', v as HairPrefs['facialHair'])} options={[{ value: 'none', label: 'None' }, { value: 'shave', label: 'I shave' }, { value: 'beard', label: 'I keep a beard' }, { value: 'not_applicable', label: 'Skip' }]} />
     </div>
+  );
+}
+
+/** Standard positions, advanced/modern roles, or anything typed in. */
+function PositionPicker({ sport, label, value, onChange, exclude }: { sport: SportId; label: string; value: string; onChange: (v: string) => void; exclude?: string }) {
+  const list = POSITIONS[sport].filter((p) => p.name !== exclude);
+  const known = !value || list.some((p) => p.name === value);
+  const [custom, setCustom] = useState(!known);
+  const info = positionInfo(sport, value);
+  if (!list.length) {
+    return <Field label={label} optional>{(p) => <Input {...p} value={value} maxLength={40} onChange={(e) => onChange(e.target.value)} />}</Field>;
+  }
+  return (
+    <Field label={label} optional hint={info?.advanced ? info.blurb : undefined}>
+      {(p) =>
+        custom ? (
+          <div className="row-sm">
+            <Input {...p} value={value} maxLength={40} placeholder="Type your position" onChange={(e) => onChange(e.target.value)} />
+            <Button size="sm" variant="ghost" onClick={() => { setCustom(false); onChange(''); }}>List</Button>
+          </div>
+        ) : (
+          <Select {...p} value={value} onChange={(e) => { if (e.target.value === '__other') { setCustom(true); onChange(''); } else onChange(e.target.value); }}>
+            <option value="">Choose…</option>
+            <optgroup label="Positions">{list.filter((x) => !x.advanced).map((x) => <option key={x.name} value={x.name}>{x.name}</option>)}</optgroup>
+            {list.some((x) => x.advanced) && <optgroup label="Advanced and modern roles">{list.filter((x) => x.advanced).map((x) => <option key={x.name} value={x.name}>{x.name}</option>)}</optgroup>}
+            <option value="__other">Something else…</option>
+          </Select>
+        )
+      }
+    </Field>
   );
 }

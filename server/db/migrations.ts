@@ -398,4 +398,34 @@ ALTER TABLE commitments ADD COLUMN external_uid TEXT;
 CREATE INDEX commitments_external ON commitments(user_id, external_uid);
 `,
   },
+  {
+    id: 11,
+    name: 'coach_chat',
+    sql: `
+CREATE TABLE coach_threads (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX coach_threads_user ON coach_threads(user_id, updated_at);
+CREATE TABLE coach_messages (
+  id TEXT PRIMARY KEY,
+  thread_id TEXT NOT NULL REFERENCES coach_threads(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL,
+  content TEXT NOT NULL,
+  sources TEXT NOT NULL DEFAULT '[]',
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX coach_messages_thread ON coach_messages(thread_id, created_at);
+CREATE INDEX coach_messages_user ON coach_messages(user_id, role, created_at);
+CREATE TABLE coach_consent (
+  user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  provider TEXT NOT NULL,
+  consented_at INTEGER NOT NULL
+);
+`,
+  },
 ];

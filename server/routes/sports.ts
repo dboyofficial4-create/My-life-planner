@@ -9,6 +9,8 @@ import { startOfWeek } from '../../shared/domain/time';
 import { decryptSecret, encryptSecret } from '../auth/crypto';
 import { YouTubeError, resolveChannel, searchChannel, validateKey, type VideoResult } from '../integrations/youtube';
 import { loadContext } from '../services/context';
+import { planSportSessions, sportPriorities } from '../../shared/domain/sports/personalize';
+import { positionInfo } from '../../shared/domain/sports/positions';
 
 export const sportsRoutes = new Hono<AppEnv>();
 
@@ -44,7 +46,12 @@ sportsRoutes.get('/sports', (c) => {
     const info = sportInfo(s.sport);
     const tests = store.skillTests(s.sport);
     const phase = tryoutPhase(ctx.today, s.tryoutDate);
+    const dose = skillDose({ status: s.teamStatus, season: s.seasonPhase, today: ctx.today, tryoutDate: s.tryoutDate, weekStart: week });
+    const positions = [s.position, s.secondaryPosition].map((p) => positionInfo(s.sport, p)).filter((p) => !!p).map((p) => ({ name: p.name, blurb: p.blurb, conditioning: p.conditioning, strength: p.strength, advanced: !!p.advanced }));
     return {
+      priorities: sportPriorities(s, info, tests).slice(0, 4),
+      week: planSportSessions(s, info, tests, { weekStart: week, sessions: dose.sessions, minutes: dose.minutes }),
+      positionInfo: positions,
       prefs: s,
       label: info.label,
       positions: info.positions,
@@ -60,7 +67,7 @@ sportsRoutes.get('/sports', (c) => {
       safety: info.safety,
       status: { value: s.teamStatus, label: TEAM_STATUS_LABELS[s.teamStatus], development: isDevelopmentMode(s.teamStatus) },
       tryout: { ...phase, ...PHASE_INFO[phase.phase] },
-      dose: skillDose({ status: s.teamStatus, season: s.seasonPhase, today: ctx.today, tryoutDate: s.tryoutDate, weekStart: week }),
+      dose,
       cutSteps: s.teamStatus === 'cut' || s.teamStatus === 'tryout_prep' || s.teamStatus === 'no_team' ? CUT_STEPS : [],
     };
   });

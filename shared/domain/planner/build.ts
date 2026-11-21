@@ -3,7 +3,7 @@ import { addDays, hhmmToMin, weekdayOf, type LocalDate } from '../time';
 import type { Commitment, Goal, SettingsBundle, TimePref } from '../../schemas';
 import type { Program } from '../fitness/generator';
 import { sportInfo } from '../sports/catalog';
-import { PHASE_INFO, focusFor, isDevelopmentMode, skillDose, tryoutPhase } from '../sports/tryout';
+import { PHASE_INFO, isDevelopmentMode, skillDose, tryoutPhase } from '../sports/tryout';
 import type { MealEntry } from '../nutrition/mealplan';
 import { recipeById } from '../nutrition/recipes';
 import type { Routine } from '../care/routines';
@@ -12,6 +12,7 @@ import { studyRequests, type AssignmentLike } from '../school/study';
 import type { ActivityRequest, FixedBlock, Interval, PlanInput } from './types';
 import type { ReadinessPlan } from '../fitness/readiness';
 import { gameDayRequests } from '../sports/schedule';
+import { planSportSessions, type TestRow } from '../sports/personalize';
 
 export interface BuildContext {
   dates: LocalDate[];
@@ -32,6 +33,8 @@ export interface BuildContext {
   notBefore?: PlanInput['notBefore'];
   /** Today's readiness check-in, if any: 'lighter' moves hard training off today, 'recovery' moves all of it. */
   readiness?: { date: LocalDate; plan: ReadinessPlan } | null;
+  /** The athlete's own skill-test results by sport, used to personalise sport sessions. */
+  skillTests?: Record<string, TestRow[]>;
 }
 
 const isWeekend = (d: LocalDate) => {
@@ -181,20 +184,17 @@ export function buildPlanInput(ctx: BuildContext): BuildResult {
       const info = sportInfo(s.sport);
       const dose = skillDose({ status: s.teamStatus, season: s.seasonPhase, today: ctx.today, tryoutDate: s.tryoutDate, weekStart });
       const dev = isDevelopmentMode(s.teamStatus);
-      const skills = s.skills.filter((k) => info.skills.some((x) => x.id === k));
-      const focusList = skills.length ? skills : info.skills.slice(0, 2).map((x) => x.id);
+      const sessions = planSportSessions(s, info, ctx.skillTests?.[s.sport] ?? [], { weekStart, sessions: dose.sessions, minutes: dose.minutes });
       const phase = tryoutPhase(ctx.today, s.tryoutDate);
       const blocked = dates.filter((d) => gameDates.has(d) || dose.restBefore.includes(d));
       for (let n = 0; n < dose.sessions; n++) {
-        const focus = focusFor(focusList, weekStart, n);
-        const skill = info.skills.find((x) => x.id === focus);
-        const drills = info.drills.filter((dr) => dr.skill === focus).map((dr) => dr.name);
+        const session = sessions[n]!;
         const why = dev
           ? `${s.teamStatus === 'cut' ? 'Without team practice, these sessions supply the skill work.' : 'Building toward tryouts.'}${phase.daysLeft !== null && phase.daysLeft >= 0 ? ` ${phase.daysLeft} days to tryouts — ${PHASE_INFO[phase.phase].label.toLowerCase()} phase.` : ''}`
           : s.seasonPhase === 'in' ? 'Kept light because you are in season — team practice does most of the work.' : 'Solo skill work between team practices.';
         requests.push({
           key: `sport:${s.sport}:${n}`,
-          title: `${info.label}: ${skill?.label ?? 'skill practice'}`,
+          title: `${info.label}: ${session.label}`,
           category: 'sport',
           idealMinutes: dose.minutes,
           minMinutes: dose.minMinutes,
@@ -205,8 +205,8 @@ export function buildPlanInput(ctx: BuildContext): BuildResult {
           avoidDates: blocked,
           group: `sport:${s.sport}`,
           minGapDays: 0,
-          explain: `${why}${s.coachFeedback ? ` Coach feedback: “${s.coachFeedback.slice(0, 120)}”.` : ''}`.trim(),
-          meta: { sport: s.sport, skill: focus, drills, steps: drills },
+          explain: `${session.why} ${why}${s.coachFeedback ? ` Coach feedback: “${s.coachFeedback.slice(0, 120)}”.` : ''}`.trim(),
+          meta: { sport: s.sport, skill: session.skill, drills: session.drills.map((d) => d.name), steps: session.steps },
         });
       }
       if (dose.skillsCheck && info.tests.length) {

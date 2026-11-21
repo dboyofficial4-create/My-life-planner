@@ -1,6 +1,7 @@
 import type { AgePolicy } from '../age';
 import type { EquipmentId, FitnessPrefs, Goal, SportsPrefs } from '../../schemas';
 import { COOLDOWN, EXERCISES, MOBILITY_FLOW, WARMUP, type Exercise, type Pattern } from './exercises';
+import { positionEmphasis, positionInfo, type Emphasis } from '../sports/positions';
 
 export type Focus = 'strength' | 'muscle' | 'general' | 'endurance' | 'mobility' | 'athletic';
 
@@ -216,7 +217,7 @@ export function generateProgram(input: ProgramInput): Program {
       key,
       title: 'Conditioning',
       focus: 'endurance',
-      purpose: 'Build your aerobic base and work capacity so you recover faster between efforts.',
+      purpose: role ? `Conditioning for a ${role.name.toLowerCase()}: ${role.conditioning.charAt(0).toLowerCase()}${role.conditioning.slice(1)}` : 'Build your aerobic base and work capacity so you recover faster between efforts.',
       minutes,
       expressMinutes: 15,
       expressCount: 0,
@@ -251,8 +252,28 @@ export function generateProgram(input: ProgramInput): Program {
   });
 
   const workouts: WorkoutPlan[] = [];
-  const A = strengthDay('A', focus === 'athletic' ? ['power', 'squat', 'pull', 'push', 'core'] : ['squat', 'push', 'hinge', 'pull', 'core'], 'Full body A', focus === 'athletic' ? 'Power and strength to support your sport, kept short so practice stays the priority.' : 'Build strength through the main movement patterns: squat, push, hinge, pull.');
-  const B = strengthDay('B', focus === 'athletic' ? ['lunge', 'hinge', 'push', 'pull', 'core'] : ['lunge', 'hinge', 'push', 'pull', 'core'], 'Full body B', 'Single-leg strength and posterior chain work to balance session A.');
+  const first = sports?.sports[0];
+  const emphasis: Emphasis = focus === 'athletic' && first ? positionEmphasis(first.sport, first.position) : 'balanced';
+  const role = first ? positionInfo(first.sport, first.position) : undefined;
+  const athleticA: Record<Emphasis, [Pattern[], string]> = {
+    speed: [['power', 'hinge', 'lunge', 'pull', 'core'], 'Acceleration and hamstring strength for top speed: jumps first while fresh, then hinge and single-leg work.'],
+    size: [['squat', 'push', 'hinge', 'pull', 'core'], 'Heavy compound lifts to build the strength and mass your position needs to win contact.'],
+    jump: [['power', 'squat', 'lunge', 'pull', 'core'], 'Jump power and landing strength: explosive work first, then squats and single-leg strength.'],
+    rotation: [['power', 'core', 'squat', 'pull', 'push'], 'Rotational power from the hips and core, with extra pulling to keep throwing and hitting shoulders healthy.'],
+    endurance: [['lunge', 'hinge', 'pull', 'core', 'push'], 'Strength that keeps you injury-free under a high running or swimming load. Kept short.'],
+    balanced: [['power', 'squat', 'pull', 'push', 'core'], 'Power and strength to support your sport, kept short so practice stays the priority.'],
+  };
+  const athleticB: Record<Emphasis, Pattern[]> = {
+    speed: ['power', 'squat', 'pull', 'push', 'core'],
+    size: ['hinge', 'lunge', 'push', 'pull', 'core'],
+    jump: ['power', 'hinge', 'push', 'pull', 'core'],
+    rotation: ['lunge', 'pull', 'hinge', 'core', 'push'],
+    endurance: ['squat', 'pull', 'push', 'core'],
+    balanced: ['lunge', 'hinge', 'push', 'pull', 'core'],
+  };
+  const forRole = role ? ` Built for a ${role.name.toLowerCase()}: ${role.strength.charAt(0).toLowerCase()}${role.strength.slice(1)}` : '';
+  const A = strengthDay('A', focus === 'athletic' ? athleticA[emphasis][0] : ['squat', 'push', 'hinge', 'pull', 'core'], 'Full body A', focus === 'athletic' ? `${athleticA[emphasis][1]}${forRole}` : 'Build strength through the main movement patterns: squat, push, hinge, pull.');
+  const B = strengthDay('B', focus === 'athletic' ? athleticB[emphasis] : ['lunge', 'hinge', 'push', 'pull', 'core'], 'Full body B', focus === 'athletic' && role ? `Single-leg strength and the other half of your ${role.name.toLowerCase()} work.` : 'Single-leg strength and posterior chain work to balance session A.');
 
   switch (focus) {
     case 'endurance':

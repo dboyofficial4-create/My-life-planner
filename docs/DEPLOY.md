@@ -69,6 +69,7 @@ Gmail allows a few hundred emails a day, plenty for this. Any other email provid
 | `APP_URL` | The public address, used in reset emails (never taken from the request) |
 | `SIGNUP_CODE` | If set, sign-up requires it |
 | `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` | Server-wide AI keys (optional) |
+| `COACH_DAILY_LIMIT` | Coach questions per person per day (default 40) |
 | `VAPID_SUBJECT` | Contact for push services |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Email for reset links (optional) |
 | `APP_ENCRYPTION_KEY` | Optional; otherwise created on the disk the first time |

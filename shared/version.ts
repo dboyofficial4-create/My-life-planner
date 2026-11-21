@@ -4,4 +4,4 @@
  * restart when they differ (e.g. after `git pull` while the app was running:
  * the web side reloads itself, but the server keeps running old code).
  */
-export const API_VERSION = 17;
+export const API_VERSION = 18;

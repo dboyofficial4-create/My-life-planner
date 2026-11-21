@@ -105,7 +105,7 @@ describe('fitness: equipment restrictions', () => {
   });
 
   it('caps gym sessions in season', () => {
-    const p = generateProgram({ fitness: fitness({ sessionsPerWeek: 5 }), sports: { sports: [{ sport: 'soccer', position: 'Mid', level: 'school_team', seasonPhase: 'in', goal: '', teamStatus: 'on_team', tryoutDate: null, skills: [], coachFeedback: '' }] }, goals: [goal('sports', 'sport_performance', 1)], policy: adult });
+    const p = generateProgram({ fitness: fitness({ sessionsPerWeek: 5 }), sports: { sports: [{ sport: 'soccer', position: 'Mid', secondaryPosition: '', level: 'school_team', seasonPhase: 'in', goal: '', teamStatus: 'on_team', tryoutDate: null, skills: [], coachFeedback: '' }] }, goals: [goal('sports', 'sport_performance', 1)], policy: adult });
     expect(p.sessionsPerWeek).toBe(2);
     expect(p.notes.join(' ')).toMatch(/in season/);
   });

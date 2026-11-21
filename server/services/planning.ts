@@ -57,6 +57,7 @@ function compute(store: UserStore, weekStart: LocalDate, now: Date) {
       const r = store.readinessOn(ctx.today);
       return r ? { date: r.date, plan: r.plan } : null;
     })(),
+    skillTests: Object.fromEntries((ctx.modules.has('sports') ? ctx.settings.sports?.sports ?? [] : []).map((s) => [s.sport, store.skillTests(s.sport)])),
   });
   const result = replan(current, input, nowMoment(ctx, week.start));
   if (result.validationErrors.length) {

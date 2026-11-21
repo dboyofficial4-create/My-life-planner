@@ -24,6 +24,7 @@ lookRoutes.get('/looks/:kind', (c) => {
     report: c.var.store.latestLookReport(kind),
     photosAllowed: kind === 'skin' ? ctx.policy.allowFacePhotos : ctx.policy.allowAppearancePhotos,
     goalPhotoAllowed: kind === 'build' && ctx.policy.allowGoalPhotos,
+    sports: ctx.modules.has('sports') ? (ctx.settings.sports?.sports ?? []).map((s) => ({ sport: s.sport, position: s.position, secondaryPosition: s.secondaryPosition })) : [],
     aiReady: !!p,
     provider: p?.name ?? null,
   });
@@ -35,7 +36,7 @@ lookRoutes.delete('/looks/:kind', (c) => {
 });
 
 /** Which AI to use: Claude when there is an Anthropic key (the server's or the user's), else Gemini from GEMINI_API_KEY. */
-function provider(c: Parameters<typeof aiKeyFor>[0]): { name: 'claude' | 'gemini'; key: string } | null {
+export function provider(c: Parameters<typeof aiKeyFor>[0]): { name: 'claude' | 'gemini'; key: string } | null {
   const anthropic = aiKeyFor(c);
   if (anthropic) return { name: 'claude', key: anthropic };
   if (c.var.config.geminiApiKey) return { name: 'gemini', key: c.var.config.geminiApiKey };
@@ -81,39 +82,47 @@ const TEEN_BLOCKED = /\b(deficit|cut(ting)?\b|lose weight|weight loss|body[- ]?f
 lookRoutes.post('/looks/build', async (c) => {
   const input = await body(c, BuildPlanInput);
   const ctx = loadContext(c.var.store, c.var.now());
-  const usedPhotos = !!(input.currentPhoto || input.goalPhoto);
-  if (input.currentPhoto && !ctx.policy.allowAppearancePhotos) {
-    throw new HttpError(403, 'age_restricted', 'Photos of yourself are for ages 18 and up. You can still add a photo of the build you want, and describe where you are now.');
+  const usedPhotos = input.currentPhotos.length > 0 || input.goalPhotos.length > 0;
+  if (input.currentPhotos.length && !ctx.policy.allowAppearancePhotos) {
+    throw new HttpError(403, 'age_restricted', 'Photos of yourself are for ages 18 and up. You can still add photos of the build you want, and describe where you are now.');
   }
-  if (input.goalPhoto && !ctx.policy.allowGoalPhotos) {
+  if (input.goalPhotos.length && !ctx.policy.allowGoalPhotos) {
     throw new HttpError(403, 'age_restricted', 'Goal photos are for ages 14 and up. Pick the build you want and describe it instead; you’ll get the same kind of plan.');
   }
   if (usedPhotos && !input.photoRules) throw new HttpError(422, 'validation', 'Confirm that your photos follow the photo rules.', { fields: { photoRules: 'Required with photos' } });
   const archetype = input.archetype ? archetypeById(input.archetype) : undefined;
   if (input.archetype && !archetype) throw new HttpError(422, 'validation', 'Choose one of the builds shown.');
-  if (!usedPhotos && !archetype && !input.goals.length && !input.description) throw new HttpError(422, 'validation', 'Choose a build, add a goal photo, or describe the build you want.');
+  if (!usedPhotos && !archetype && !input.goals.length && !input.description) throw new HttpError(422, 'validation', 'Choose a build, add goal photos, or describe the build you want.');
   const f = ctx.settings.fitness;
   const sports = ctx.modules.has('sports') ? ctx.settings.sports?.sports ?? [] : [];
+  const goalN = input.goalPhotos.length;
   const brief = [
     ageLine(ctx.policy.age, ctx.policy.band),
     f
       ? `Training: ${f.experience} experience, ${f.sessionsPerWeek} sessions a week of about ${f.sessionMinutes} minutes, at ${f.locations.join(' / ') || 'home'}. Equipment: ${f.equipment.map((e) => EQUIPMENT_LABELS[e] ?? e).join(', ') || 'body weight only'}.`
       : 'Training: not set up yet; plan 3 sessions a week of 45 minutes with body weight and dumbbells.',
     f?.limitations.length ? `Injuries or limitations to work around: ${f.limitations.join(', ')}${f.limitationNotes ? ` (${f.limitationNotes})` : ''}.` : null,
-    sports.length ? `Sport: ${sports.map((s) => `${s.sport.replace('_', ' ')} (${s.level.replace('_', ' ')}, ${s.seasonPhase} season)`).join('; ')}. Leave room for practice.` : null,
-    archetype
-      ? `Chosen build: ${archetype.name} (seen in ${archetype.seenIn}). Typical look: ${archetype.look.join('; ')}. Typical training emphasis: ${archetype.training.join('; ')}. Reality check to keep: ${archetype.realityCheck}`
+    sports.length
+      ? `Sport: ${sports.map((s) => `${s.sport.replace('_', ' ')}${s.position ? `, ${[s.position, s.secondaryPosition].filter(Boolean).join(' and ')}${s.secondaryPosition ? ' (two-way)' : ''}` : ''} (${s.level.replace('_', ' ')}, ${s.seasonPhase} season)`).join('; ')}. Leave room for practice.`
       : null,
+    archetype
+      ? `Chosen build: ${archetype.name} (seen in ${archetype.seenIn}). Typical look: ${archetype.look.join('; ')}. Why people choose it: ${archetype.benefits.join('; ')}. Typical training emphasis: ${archetype.training.join('; ')}. Reality check to keep: ${archetype.realityCheck}`
+      : null,
+    input.forPosition ? `They picked this build for: ${input.forPosition}. Tie the plan to what that position needs.` : null,
     input.goals.length ? `Goal: ${input.goals.map((g) => BUILD_GOAL_LABELS[g]).join(', ')}.` : null,
     input.description ? `In their words: ${input.description}` : null,
-    usedPhotos ? `Photos attached: ${[input.currentPhoto && 'current', input.goalPhoto && 'goal'].filter(Boolean).join(' and ')}.` : 'No photos: work from these answers.',
-    input.goalPhoto && !input.currentPhoto
-      ? 'Only a goal photo is attached (of someone else, not the user). Describe the training-relevant traits of that build and plan toward them from the answers above. Leave the "now" column to what the user said, or "not shown". If the person in it looks like a professional or adult athlete and the user is under 18, say kindly that the build takes years of training and growth.'
+    usedPhotos ? `Photos attached: ${[input.currentPhotos.length && `${input.currentPhotos.length} of the user now`, goalN && `${goalN} of the goal build`].filter(Boolean).join(' and ')}.` : 'No photos: work from these answers.',
+    goalN
+      ? `The ${goalN} goal photos may be of one person from different angles or of several people with a similar build. Describe the training-relevant traits they share (and say where they differ), and plan toward the common goal; don't plan toward one flattering pose or angle. If the photos show clearly different builds, say so in summary and plan toward what they have in common.`
       : null,
+    goalN && !input.currentPhotos.length
+      ? 'The goal photos are of someone else, not the user. Leave the "now" column to what the user said, or "not shown". If the person in them looks like a professional or adult athlete and the user is under 18, say kindly that the build takes years of training and growth.'
+      : null,
+    input.currentPhotos.length > 1 ? 'The photos of the user show different angles of the same person; use all of them to judge where they are now.' : null,
   ].filter(Boolean).join('\n');
   const photos = [
-    ...(input.currentPhoto ? [{ label: 'current (the user now)', photo: input.currentPhoto }] : []),
-    ...(input.goalPhoto ? [{ label: 'goal (the build they want)', photo: input.goalPhoto }] : []),
+    ...input.currentPhotos.map((photo, i) => ({ label: `current ${i + 1} of ${input.currentPhotos.length} (the user now)`, photo })),
+    ...input.goalPhotos.map((photo, i) => ({ label: `goal ${i + 1} of ${goalN} (the build they want)`, photo })),
   ];
   const ai = lookAI(c);
   const result = sanitizeBuild(await ai.build(photos, brief));

@@ -66,7 +66,7 @@ describe('cut / tryout mode', () => {
   });
 
   const sportsPrefs = (o: Partial<SportsPrefs['sports'][number]> = {}): SportsPrefs => ({
-    sports: [{ sport: 'basketball', position: 'Guard', level: 'school_team', seasonPhase: 'off', goal: '', teamStatus: 'cut', tryoutDate: null, skills: ['shooting', 'ball_handling'], coachFeedback: 'Improve weak-hand dribbling', ...o }],
+    sports: [{ sport: 'basketball', position: 'Guard', secondaryPosition: '', level: 'school_team', seasonPhase: 'off', goal: '', teamStatus: 'cut', tryoutDate: null, skills: ['shooting', 'ball_handling'], coachFeedback: 'Improve weak-hand dribbling', ...o }],
   });
 
   it('builds a valid plan with focused sessions and keeps the tryout day clear', () => {
@@ -141,7 +141,7 @@ async function athlete(app: ReturnType<typeof createApp>, email: string) {
     goals: [], schedule: { lifeStage: 'neither', wakeWeekday: '07:00', sleepWeekday: '22:30', wakeWeekend: '08:00', sleepWeekend: '23:00', preferredWorkoutTime: 'evening', preferredStudyTime: 'any', restDays: [0], busyDays: [], commuteMinutes: 0 },
     schoolHours: { enabled: false, days: [], start: '08:00', end: '15:00' }, workHours: { enabled: false, days: [], start: '09:00', end: '17:00' }, commitments: [],
     fitness: { experience: 'some', sessionsPerWeek: 2, sessionMinutes: 45, locations: ['home'], equipment: [], accessNotes: '', limitations: [], limitationNotes: '' },
-    sports: { sports: [{ sport: 'basketball', position: 'Guard', level: 'school_team', seasonPhase: 'off', goal: 'Make varsity', teamStatus: 'cut', tryoutDate: '2027-02-01', skills: ['shooting'], coachFeedback: '' }] },
+    sports: { sports: [{ sport: 'basketball', position: 'Guard', secondaryPosition: '', level: 'school_team', seasonPhase: 'off', goal: 'Make varsity', teamStatus: 'cut', tryoutDate: '2027-02-01', skills: ['shooting'], coachFeedback: '' }] },
   });
   expect(r.status, r.text).toBe(200);
   return c;

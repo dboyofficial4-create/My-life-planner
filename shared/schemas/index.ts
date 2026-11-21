@@ -182,6 +182,8 @@ export const SportsSchema = z.object({
       z.object({
         sport: z.enum(SPORTS),
         position: z.string().max(40),
+        /** Two-way players: the second position (e.g. receiver and cornerback). */
+        secondaryPosition: z.string().max(40).default(''),
         level: z.enum(['recreational', 'school_team', 'club', 'competitive']),
         seasonPhase: z.enum(['off', 'pre', 'in', 'post']),
         goal: z.string().max(140),

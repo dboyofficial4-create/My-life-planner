@@ -216,4 +216,14 @@ describe('personalised sports', () => {
     expect(wr.workouts[0]!.purpose).toMatch(/wide receiver/i);
     expect(wr.workouts[0]!.main[0]!.exerciseId).not.toBe(ol.workouts[0]!.main[0]!.exerciseId);
   });
+
+  it('after a cut there is no season: gym work is not capped and no games are expected', () => {
+    const fitness = { experience: 'some' as const, sessionsPerWeek: 4, sessionMinutes: 45, locations: ['gym' as const], equipment: ['dumbbells' as const], accessNotes: '', limitations: [], limitationNotes: '' };
+    const policy = agePolicy('2009-01-01', '2026-11-16');
+    const cut = generateProgram({ fitness, sports: { sports: [prefs({ teamStatus: 'cut', seasonPhase: 'in' })] }, goals: [], policy });
+    expect(cut.sessionsPerWeek).toBe(4);
+    expect(cut.notes.join(' ')).not.toMatch(/in season/i);
+    const onTeam = generateProgram({ fitness, sports: { sports: [prefs({ seasonPhase: 'in' })] }, goals: [], policy });
+    expect(onTeam.sessionsPerWeek).toBe(2);
+  });
 });

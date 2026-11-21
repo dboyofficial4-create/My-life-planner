@@ -476,7 +476,7 @@ export function SportsForm({ value, onChange }: { value: SportsPrefs; onChange: 
             <Chips
               label="Team situation"
               value={sp.teamStatus}
-              onChange={(v) => update(i, { teamStatus: v as typeof sp.teamStatus })}
+              onChange={(v) => update(i, v === 'on_team' ? { teamStatus: 'on_team' } : { teamStatus: v as typeof sp.teamStatus, seasonPhase: 'off' })}
               options={[
                 { value: 'on_team', label: 'On a team' },
                 { value: 'cut', label: 'Got cut' },

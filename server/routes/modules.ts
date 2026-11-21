@@ -40,6 +40,9 @@ moduleRoutes.get('/fitness', (c) => {
     equipment: (ctx.settings.fitness?.equipment ?? []).map((e) => EQUIPMENT_LABELS[e]),
     limitations: ctx.settings.fitness?.limitations ?? [],
     hasSports: ctx.modules.has('sports') && !!ctx.settings.sports?.sports.length,
+    /** On a team in at least one sport (games and seasons apply). After a cut there are no games to plan. */
+    wasCut: ctx.modules.has('sports') && !!ctx.settings.sports?.sports.some((s) => s.teamStatus === 'cut'),
+    onTeam: ctx.modules.has('sports') && !!ctx.settings.sports?.sports.some((s) => s.teamStatus === 'on_team'),
     /** Progress photos never reach the server; this only says whether the app offers them. */
     progressPhotos: ctx.modules.has('sports') && ctx.policy.allowProgressPhotos,
     history,

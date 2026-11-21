@@ -158,7 +158,8 @@ export function generateProgram(input: ProgramInput): Program {
   const { fitness, sports, goals, policy } = input;
   const owned = new Set<EquipmentId>(fitness.equipment);
   const focus = primaryFocus(goals, sports);
-  const inSeason = !!sports?.sports.some((s) => s.seasonPhase === 'in');
+  // Only a player on a team is "in season": after a cut or between teams there are no practices or games doing the work.
+  const inSeason = !!sports?.sports.some((s) => s.teamStatus === 'on_team' && s.seasonPhase === 'in');
   const notes: string[] = [...policy.notes.filter((n) => /training|lift/i.test(n))];
   const gaps: string[] = [];
 

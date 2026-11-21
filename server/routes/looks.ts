@@ -103,7 +103,7 @@ lookRoutes.post('/looks/build', async (c) => {
       : 'Training: not set up yet; plan 3 sessions a week of 45 minutes with body weight and dumbbells.',
     f?.limitations.length ? `Injuries or limitations to work around: ${f.limitations.join(', ')}${f.limitationNotes ? ` (${f.limitationNotes})` : ''}.` : null,
     sports.length
-      ? `Sport: ${sports.map((s) => `${s.sport.replace('_', ' ')}${s.position ? `, ${[s.position, s.secondaryPosition].filter(Boolean).join(' and ')}${s.secondaryPosition ? ' (two-way)' : ''}` : ''} (${s.level.replace('_', ' ')}, ${s.seasonPhase} season)`).join('; ')}. Leave room for practice.`
+      ? `Sport: ${sports.map((s) => `${s.sport.replace('_', ' ')}${s.position ? `, ${[s.position, s.secondaryPosition].filter(Boolean).join(' and ')}${s.secondaryPosition ? ' (two-way)' : ''}` : ''} ${s.teamStatus === 'on_team' ? ` (${s.level.replace('_', ' ')}, ${s.seasonPhase} season)` : ` (${s.teamStatus === 'cut' ? 'got cut, working to make the team next time' : s.teamStatus === 'tryout_prep' ? 'preparing for tryouts' : 'not on a team right now'}${s.tryoutDate ? `, tryout on ${s.tryoutDate}` : ''})`}`).join('; ')}. ${sports.some((s) => s.teamStatus === 'on_team') ? 'Leave room for practice.' : 'No team practices right now, so the plan can carry more of the training.'}`
       : null,
     archetype
       ? `Chosen build: ${archetype.name} (seen in ${archetype.seenIn}). Typical look: ${archetype.look.join('; ')}. Why people choose it: ${archetype.benefits.join('; ')}. Typical training emphasis: ${archetype.training.join('; ')}. Reality check to keep: ${archetype.realityCheck}`

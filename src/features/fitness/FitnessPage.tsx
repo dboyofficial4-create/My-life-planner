@@ -16,6 +16,8 @@ interface FitnessData {
   equipment: string[];
   limitations: string[];
   hasSports: boolean;
+  onTeam: boolean;
+  wasCut: boolean;
   progressPhotos: boolean;
   history: { id: string; date: string; title: string; status: string; minutes: number; effort: number | null; discomfort: number | null; note: string | null }[];
   load: { date: string; load: number; sessions: string[] }[];
@@ -27,20 +29,23 @@ type Tab = 'program' | 'games' | 'build' | 'photos' | 'load' | 'history' | 'spor
 
 export default function FitnessPage() {
   const q = useQuery({ queryKey: ['fitness'], queryFn: () => api.get<FitnessData>('/fitness') });
-  const [tab, setTab] = useState<Tab>('program');
+  const [tab, setTab] = useState<Tab | null>(null);
   if (q.isPending) return <PageSkeleton />;
   if (q.error) return <div className="page"><ErrorState error={q.error} onRetry={() => q.refetch()} /></div>;
   const d = q.data;
   const tabs: { value: Tab; label: string }[] = [
     ...(d.program ? [{ value: 'program' as const, label: 'Program' }] : []),
-    ...(d.hasSports ? [{ value: 'games' as const, label: 'Games' }] : []),
+    // Not on a team (cut, tryouts, between teams): the comeback plan comes first and there are no games.
+    ...(d.hasSports && !d.onTeam ? [{ value: 'sports' as const, label: d.wasCut ? 'Comeback plan' : 'Tryout plan' }] : []),
+    ...(d.onTeam ? [{ value: 'games' as const, label: 'Games' }] : []),
     { value: 'build', label: 'Build planner' },
     ...(d.progressPhotos ? [{ value: 'photos' as const, label: 'Progress photos' }] : []),
     { value: 'load', label: 'Training load' },
     { value: 'history', label: 'History' },
-    ...(d.hasSports ? [{ value: 'sports' as const, label: 'Sport skills' }] : []),
+    ...(d.hasSports && d.onTeam ? [{ value: 'sports' as const, label: 'Sport skills' }] : []),
   ];
-  const active = tabs.some((t) => t.value === tab) ? tab : tabs[0]!.value;
+  // After a cut, open on the comeback plan.
+  const active = tab && tabs.some((t) => t.value === tab) ? tab : d.hasSports && !d.onTeam ? 'sports' : tabs[0]!.value;
 
   return (
     <div className="page">

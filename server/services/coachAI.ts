@@ -1,5 +1,5 @@
 /**
- * The AI Coach: a chat that knows the student's plan and can research on the web.
+ * The Compass: a chat that knows the student's plan and can research on the web.
  *
  * Claude: Messages API (streaming) with the server-side web search tool.
  * Gemini: generateContentStream with Google Search grounding (used when only GEMINI_API_KEY is set).
@@ -47,7 +47,7 @@ export type CoachAIFactory = (apiKey: string) => CoachAI;
 /** Web searches allowed per answer. */
 export const MAX_SEARCHES = 5;
 
-export const COACH_PROMPT = `You are Coach, the assistant inside Waypoint, a planner for student athletes. You help with training, sport skills, recovery, food, sleep, school and study methods, skin and hair care, and organising the week.
+export const COACH_PROMPT = `You are Compass, the assistant inside Waypoint, a planner for student athletes. You help with training, sport skills, recovery, food, sleep, school and study methods, skin and hair care, and organising the week.
 
 How to answer:
 - Use the student's profile and plan (below) to make every answer specific to them: their sport and position, level, season, equipment, injuries, schedule and what their tests show. Never give a generic list when you can tailor it.
@@ -162,7 +162,7 @@ export const anthropicCoachAI: CoachAIFactory = (apiKey) => {
           const said = message.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('').trim();
           if (said) roundTexts.push(said);
           if (message.stop_reason === 'refusal') {
-            if (!roundTexts.length) throw new HttpError(422, 'ai_refused', 'Coach can’t help with that one. Try asking a different way, or talk to a coach, parent or doctor.');
+            if (!roundTexts.length) throw new HttpError(422, 'ai_refused', 'Compass can’t help with that one. Try asking a different way, or talk to a coach, parent or doctor.');
             break;
           }
           if (message.stop_reason === 'pause_turn') {
@@ -193,7 +193,7 @@ export const anthropicCoachAI: CoachAIFactory = (apiKey) => {
         claudeError(e);
       }
       const text = roundTexts.join('\n\n').trim();
-      if (!text) throw new HttpError(503, 'ai_bad_output', 'Coach didn’t return an answer. Please try again.');
+      if (!text) throw new HttpError(503, 'ai_bad_output', 'Compass didn’t return an answer. Please try again.');
       return { text, sources: dedupeSources([...collectSources(content), ...extraSources], 10) };
     },
   };
@@ -246,7 +246,7 @@ export const geminiCoachAI: CoachAIFactory = (apiKey) => ({
       throw e;
     }
     text = text.trim();
-    if (!text) throw new HttpError(422, 'ai_refused', 'Coach can’t help with that one. Try asking a different way.');
+    if (!text) throw new HttpError(422, 'ai_refused', 'Compass can’t help with that one. Try asking a different way.');
     return { text, sources: dedupeSources(sources) };
   },
 });

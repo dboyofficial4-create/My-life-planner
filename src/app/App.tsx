@@ -79,7 +79,8 @@ export function App() {
                 <Route element={<Shell />}>
                   <Route index element={<TodayPage />} />
                   <Route path="plan" element={<PlanPage />} />
-                  <Route path="coach" element={<CoachPage />} />
+                  <Route path="compass" element={<CoachPage />} />
+                  <Route path="coach" element={<Navigate to="/compass" replace />} />
                   <Route path="fitness" element={<ModuleRoute modules={['fitness', 'sports']}><FitnessPage /></ModuleRoute>} />
                   <Route path="school" element={<ModuleRoute modules={['school']}><SchoolPage /></ModuleRoute>} />
                   <Route path="school/study" element={<ModuleRoute modules={['school']}><StudyGuidePage /></ModuleRoute>} />

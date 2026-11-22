@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_VERSION } from '@shared/version';
-import { BookOpen, CalendarDays, Dumbbell, LineChart, LogOut, MessageCircle, MoreHorizontal, Navigation, Settings, Sparkles, Sun, Utensils, type LucideIcon } from 'lucide-react';
+import { BookOpen, CalendarDays, Dumbbell, LineChart, Compass, LogOut, MoreHorizontal, Navigation, Settings, Sparkles, Sun, Utensils, type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { useMe } from './App';
@@ -19,7 +19,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { to: '/', label: 'Today', icon: Sun },
   { to: '/plan', label: 'Plan', icon: CalendarDays },
-  { to: '/coach', label: 'Coach', icon: MessageCircle },
+  { to: '/compass', label: 'Compass', icon: Compass },
   { to: '/fitness', label: 'Fitness & Sports', icon: Dumbbell, modules: ['fitness', 'sports'] },
   { to: '/school', label: 'School', icon: BookOpen, modules: ['school'] },
   { to: '/food', label: 'Food', icon: Utensils, modules: ['nutrition'] },
@@ -46,7 +46,7 @@ export function Shell() {
     navigate('/welcome');
   };
 
-  // Mobile: Today, Plan and Coach are always in the tab bar, then one module tab; the rest under "More".
+  // Mobile: Today, Plan and Compass are always in the tab bar, then one module tab; the rest under "More".
   const primary = items.slice(0, 4);
   const overflow = [...items.slice(4), { to: '/settings', label: 'Settings', icon: Settings }];
 

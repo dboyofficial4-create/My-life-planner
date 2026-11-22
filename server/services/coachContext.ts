@@ -1,5 +1,5 @@
 /**
- * What the AI Coach knows about the student: a short, plain-text profile built from their
+ * What the Compass knows about the student: a short, plain-text profile built from their
  * settings and plan. Deliberately leaves out the name, email, birthday and free-text notes
  * that aren't needed to coach.
  */

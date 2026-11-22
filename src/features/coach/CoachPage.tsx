@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { ArrowUp, Globe, History, MessageCircle, Plus, ShieldCheck, Square, Trash2 } from 'lucide-react';
+import { Compass as CompassIcon, ArrowUp, Globe, History, Plus, ShieldCheck, Square, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 import { api, ApiError, errorMessage } from '@/lib/api';
 import { Markdown } from '@/lib/markdown';
@@ -19,7 +19,7 @@ type CoachInfo = {
   threads: Thread[];
   limit: { used: number; max: number };
   suggestions: string[];
-  /** Coach can check YouTube videos and their comments. */
+  /** Compass can check YouTube videos and their comments. */
   youtube: boolean;
 };
 
@@ -31,8 +31,8 @@ export default function CoachPage() {
     <div className="page coach-page">
       <header className="page-header">
         <div>
-          <h1>Coach</h1>
-          <p>Ask anything about training, your sport, school, food or skin. Coach knows your plan and can research the web for you.</p>
+          <h1>Compass</h1>
+          <p>Your guide for school, training, food, skin and the week ahead. Compass knows your plan and can research the web for you.</p>
         </div>
       </header>
       {q.isPending ? <Skeleton h={360} r={6} /> : q.error ? <ErrorState error={q.error} onRetry={() => q.refetch()} /> : !q.data.aiReady ? <AiNotReady /> : !q.data.consent ? <Consent info={q.data} /> : <Chat info={q.data} />}
@@ -48,20 +48,20 @@ function Consent({ info }: { info: CoachInfo }) {
   return (
     <Card title={<span className="row-sm"><ShieldCheck aria-hidden style={{ width: 16 }} /> Before you start</span>}>
       <div className="stack">
-        <p className="small">To give answers that fit you, Coach sends {who} your question, the conversation so far, and a short summary from Waypoint:</p>
+        <p className="small">To give answers that fit you, Compass sends {who} your question, the conversation so far, and a short summary from Waypoint:</p>
         <ul className="small stack-sm" style={{ paddingLeft: 18 }}>
           <li>your age range (under 18 or adult), sports, positions, level and test results</li>
           <li>your training settings, goals, and the next few days of your plan</li>
           <li>upcoming tests and assignments, and food, skin or hair settings if you use those areas</li>
         </ul>
-        <p className="small muted">Never your name, email or birthday. When Coach researches, it searches the web and lists its sources. Conversations are saved to your account so you can come back to them; delete them any time. {info.provider === 'gemini' ? 'On Gemini’s free tier, Google may use what’s sent to improve its products.' : ''}</p>
-        <Callout tone="neutral">Coach gives general guidance, not medical advice. For pain, injuries or anything that worries you, talk to a doctor, athletic trainer or a trusted adult.</Callout>
+        <p className="small muted">Never your name, email or birthday. When Compass researches, it searches the web and lists its sources. Conversations are saved to your account so you can come back to them; delete them any time. {info.provider === 'gemini' ? 'On Gemini’s free tier, Google may use what’s sent to improve its products.' : ''}</p>
+        <Callout tone="neutral">Compass gives general guidance, not medical advice. For pain, injuries or anything that worries you, talk to a doctor, athletic trainer or a trusted adult.</Callout>
         <label className="checkbox">
           <input type="checkbox" checked={ok} onChange={(e) => setOk(e.target.checked)} />
           <span className="small">I understand, and I’m OK with this being sent to {who}.</span>
         </label>
         {go.error && <Callout tone="danger">{errorMessage(go.error)}</Callout>}
-        <div><Button variant="primary" icon={MessageCircle} disabled={!ok} loading={go.isPending} onClick={() => go.mutate()}>Start using Coach</Button></div>
+        <div><Button variant="primary" icon={CompassIcon} disabled={!ok} loading={go.isPending} onClick={() => go.mutate()}>Start using Compass</Button></div>
       </div>
     </Card>
   );
@@ -260,14 +260,14 @@ function Chat({ info }: { info: CoachInfo }) {
         </div>
 
         <form className="coach__composer" onSubmit={submit}>
-          <label className="sr-only" htmlFor="coach-input">Message Coach</label>
+          <label className="sr-only" htmlFor="coach-input">Message Compass</label>
           <textarea
             id="coach-input"
             ref={inputRef}
             value={draft}
             rows={2}
             maxLength={4000}
-            placeholder={left === 0 ? 'Daily limit reached. Come back tomorrow.' : 'Ask Coach anything…'}
+            placeholder={left === 0 ? 'Daily limit reached. Come back tomorrow.' : 'Ask Compass anything…'}
             disabled={left === 0}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onKey}
@@ -280,7 +280,7 @@ function Chat({ info }: { info: CoachInfo }) {
               <Button type="submit" variant="primary" icon={ArrowUp} disabled={!draft.trim() || left === 0}>Send</Button>
             )}
           </div>
-          <p className="xsmall subtle">General guidance, not medical advice. Coach can make mistakes; check anything important.</p>
+          <p className="xsmall subtle">General guidance, not medical advice. Compass can make mistakes; check anything important.</p>
         </form>
       </section>
     </div>

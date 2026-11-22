@@ -289,7 +289,7 @@ function YouTubePanel({ i }: { i: Integration }) {
     onSuccess: () => {
       setKey('');
       for (const k of ['integrations', 'sports', 'sport-videos']) qc.invalidateQueries({ queryKey: [k] });
-      toast({ message: 'YouTube connected. Videos now appear under Fitness & Sports, and Coach can research YouTube.' });
+      toast({ message: 'YouTube connected. Videos now appear under Fitness & Sports, and Compass can research YouTube.' });
     },
   });
   const disconnect = useMutation({
@@ -331,7 +331,7 @@ function YouTubePanel({ i }: { i: Integration }) {
       </Field>
       <label className="checkbox small" style={{ alignItems: 'flex-start' }}>
         <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 2 }} />
-        <span>Use this key to find videos for my sports’ skills and to let Coach research YouTube videos and their comments.</span>
+        <span>Use this key to find videos for my sports’ skills and to let Compass research YouTube videos and their comments.</span>
       </label>
       {connect.error && !f.key && <Callout tone="danger">{errorMessage(connect.error)}</Callout>}
       <div><Button type="submit" variant="primary" icon={PlugZap} loading={connect.isPending} disabled={!key.trim() || !consent}>Connect YouTube</Button></div>

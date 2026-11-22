@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BookOpen, Calculator, Check, FileUp, GraduationCap, MessageCircle, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+import { BookOpen, Calculator, Check, FileUp, GraduationCap, Compass as CompassIcon, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import { askCoach } from '@/lib/coach';
 import { useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router';
@@ -79,7 +79,7 @@ export default function SchoolPage() {
             <Button size="sm" icon={Upload} onClick={() => setImporting(true)}>Import calendar file</Button>
             <Button size="sm" icon={Plus} onClick={newAssignment}>Add assignment</Button>
             <Link className="btn btn-sm btn-ghost" to={askCoach('Research the study methods that actually work best for tests (what the research says), and turn them into a plan for my upcoming tests and assignments.')}>
-              <MessageCircle aria-hidden /> Study methods
+              <CompassIcon aria-hidden /> Study methods
             </Link>
           </>
         }

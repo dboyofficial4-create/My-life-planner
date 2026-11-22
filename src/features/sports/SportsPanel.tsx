@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { BookOpen, ExternalLink, Flag, MessageCircle, PlayCircle, ShieldCheck, Sparkles, Target, Trash2, TrendingDown, TrendingUp, Trophy } from 'lucide-react';
+import { BookOpen, ExternalLink, Flag, Compass as CompassIcon, PlayCircle, ShieldCheck, Sparkles, Target, Trash2, TrendingDown, TrendingUp, Trophy } from 'lucide-react';
 import { useState } from 'react';
 import type { Drill, Skill, SkillTest, SourceRef } from '@shared/domain/sports/catalog';
 import { pitchSmartRest } from '@shared/domain/sports/catalog';
@@ -359,7 +359,7 @@ function ForYou({ s, onPick }: { s: SportView; onPick: (skill: string) => void }
         {weakest && (
           <div className="row-wrap">
             <Link className="btn btn-secondary btn-sm" to={askCoach(`Research the best drills to improve my ${weakest.label.toLowerCase()} as a ${s.label.toLowerCase()} ${pos || 'player'}. ${weakest.reasons.length ? `Context: ${weakest.reasons.join(', ')}.` : ''} Give me a 2-week progression I can do mostly on my own.`)}>
-              <MessageCircle aria-hidden style={{ width: 15 }} /> Ask Coach to research {weakest.label.toLowerCase()} drills
+              <CompassIcon aria-hidden style={{ width: 15 }} /> Ask Compass to research {weakest.label.toLowerCase()} drills
             </Link>
           </div>
         )}

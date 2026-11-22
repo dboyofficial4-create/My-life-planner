@@ -108,7 +108,7 @@ function decodeEntities(s: string): string {
   return s.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 }
 
-/* ---------- open research (Coach): search, stats, top comments ---------- */
+/* ---------- open research (Compass): search, stats, top comments ---------- */
 
 export interface ResearchVideo {
   videoId: string;

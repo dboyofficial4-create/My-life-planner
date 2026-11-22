@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { MessageCircle, Moon, RotateCcw, Sparkles, Stethoscope, Sun } from 'lucide-react';
+import { Compass as CompassIcon, Moon, RotateCcw, Sparkles, Stethoscope, Sun } from 'lucide-react';
 import { Link } from 'react-router';
 import { askCoach } from '@/lib/coach';
 import { SKIN_CONCERN_LABELS, SKIN_CONCERNS, SKIN_TYPES, type LookReport, type SkinAdvice } from '@shared/schemas/looks';
@@ -114,7 +114,7 @@ function SkinResult({ r, onAgain }: { r: LookReport<SkinAdvice>; onAgain: () => 
           <Button size="sm" icon={RotateCcw} onClick={onAgain}>Start again</Button>
           <Button size="sm" variant="ghost" loading={clear.isPending} onClick={() => clear.mutate()}>Delete this result</Button>
           <Link className="btn btn-sm btn-ghost" to={askCoach(`Research affordable, well-reviewed products for my skin. ${a.summary.slice(0, 300)} What serums or treatments with which active ingredients and strengths would help, and what should I avoid? Compare 2–3 options.`)}>
-            <MessageCircle aria-hidden /> Research products with Coach
+            <CompassIcon aria-hidden /> Research products with Compass
           </Link>
         </div>
       </div>

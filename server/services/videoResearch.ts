@@ -1,10 +1,10 @@
 /**
- * YouTube research for Coach: find videos on a training question, read what viewers say in the
- * comments, and hand Coach a compact, honest summary to weigh.
+ * YouTube research for Compass: find videos on a training question, read what viewers say in the
+ * comments, and hand Compass a compact, honest summary to weigh.
  *
  * Comments are anecdotes, not proof. This counts them in three buckets the model can't easily
  * miscount: people reporting a result ("went from 2 to 7 makes", "made varsity"), people doubting
- * it ("sped up", "doesn't work", "clickbait"), and people reporting pain or injury. Coach then checks
+ * it ("sped up", "doesn't work", "clickbait"), and people reporting pain or injury. Compass then checks
  * the idea against real games and the evidence (see COACH_PROMPT).
  *
  * Comment text is untrusted: it is trimmed, never followed as instructions, and only a few short
@@ -95,7 +95,7 @@ export interface VideoResearch {
   sources: { title: string; url: string }[];
 }
 
-/** Search, read the top comments of the most promising videos, and write the summary for Coach. */
+/** Search, read the top comments of the most promising videos, and write the summary for Compass. */
 export async function researchVideos(query: string, key: string, fetchImpl: FetchFn = fetch, opts: { videos?: number } = {}): Promise<VideoResearch> {
   const found = await searchVideos(query, key, fetchImpl, 10);
   // Skip very short clips (Shorts are hard to judge) and keep the best-engaged ones.

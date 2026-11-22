@@ -1,5 +1,5 @@
 /**
- * A small, safe Markdown renderer for Coach replies: paragraphs, headings, bullet and numbered
+ * A small, safe Markdown renderer for Compass replies: paragraphs, headings, bullet and numbered
  * lists, bold, italic, inline code and http(s) links. It builds React elements only (never
  * innerHTML), so nothing in a reply can run as code.
  */

@@ -34,9 +34,9 @@ export interface AppConfig {
   studyAI?: import('./services/studyAI').StudyAIFactory;
   lookAI?: import('./services/lookAI').LookAIFactory;
   coachAI?: import('./services/coachAI').CoachAIFactory;
-  /** Coach questions per person per day (COACH_DAILY_LIMIT, default 40). Keeps your AI bill predictable. */
+  /** Compass questions per person per day (COACH_DAILY_LIMIT, default 40). Keeps your AI bill predictable. */
   coachDailyLimit?: number;
-  /** Server-wide YouTube Data API key (YOUTUBE_API_KEY) for Coach's video research. Users can also add their own in Settings → Connections. */
+  /** Server-wide YouTube Data API key (YOUTUBE_API_KEY) for Compass's video research. Users can also add their own in Settings → Connections. */
   youtubeApiKey?: string;
   /** Web Push (reminders). Created on first start next to the database. */
   vapid?: import('./integrations/webpush').VapidKeys;

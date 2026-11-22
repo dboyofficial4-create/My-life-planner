@@ -25,7 +25,7 @@ function limitFor(c: Context<AppEnv>) {
   return { used, max };
 }
 
-/** The YouTube key Coach can research with: the student's own (Settings → Connections), else the server's. */
+/** The YouTube key Compass can research with: the student's own (Settings → Connections), else the server's. */
 function youtubeKey(c: Context<AppEnv>): string | null {
   const enc = c.var.store.integrationToken('youtube');
   if (enc && c.var.config.encryptionKey) {
@@ -41,7 +41,7 @@ function youtubeKey(c: Context<AppEnv>): string | null {
 const VIDEO_TTL = 24 * 3_600_000;
 const MAX_VIDEO_LOOKUPS = 2;
 
-/** Coach's YouTube research tool: search, stats and a comment check, cached for a day per query. */
+/** Compass's YouTube research tool: search, stats and a comment check, cached for a day per query. */
 export function youtubeTool(c: Context<AppEnv>, key: string): CoachTool {
   let used = 0;
   return {
@@ -137,8 +137,8 @@ coachRoutes.post('/coach/chat', async (c) => {
   const store = c.var.store;
   const ctx = loadContext(store, c.var.now());
   const p = provider(c);
-  if (!p) throw new HttpError(409, 'ai_not_connected', 'Add an AI key to use Coach: ANTHROPIC_API_KEY or GEMINI_API_KEY in the .env file, or an Anthropic key in Settings → Connections.');
-  if (store.coachConsent()?.provider !== p.name) throw new HttpError(409, 'coach_consent', 'Confirm how Coach uses your information first.');
+  if (!p) throw new HttpError(409, 'ai_not_connected', 'Add an AI key to use Compass: ANTHROPIC_API_KEY or GEMINI_API_KEY in the .env file, or an Anthropic key in Settings → Connections.');
+  if (store.coachConsent()?.provider !== p.name) throw new HttpError(409, 'coach_consent', 'Confirm how Compass uses your information first.');
   const limit = limitFor(c);
   if (limit.used >= limit.max) throw new HttpError(429, 'coach_limit', `You’ve asked ${limit.max} questions in the last 24 hours, the daily limit. Try again tomorrow.`);
 
@@ -171,7 +171,7 @@ coachRoutes.post('/coach/chat', async (c) => {
       await stream.writeSSE({ event: 'done', data: JSON.stringify({ message: saved }) });
     } catch (e) {
       await pending;
-      const err = e instanceof HttpError ? { code: e.code, message: e.message } : { code: 'ai_error', message: 'Coach had a problem. Please try again.' };
+      const err = e instanceof HttpError ? { code: e.code, message: e.message } : { code: 'ai_error', message: 'Compass had a problem. Please try again.' };
       if (!(e instanceof HttpError)) console.error('coach', e);
       if (!ac.signal.aborted) await stream.writeSSE({ event: 'error', data: JSON.stringify(err) });
     }

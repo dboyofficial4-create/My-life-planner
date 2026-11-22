@@ -20,6 +20,8 @@ The free plan won't work: it goes to sleep after 15 minutes with no visitors (re
    | `APP_URL` | Leave empty for now (you'll know the address after step 5). |
    | `SIGNUP_CODE` | A code only your friends get, e.g. `falcons-2026`. People need it to sign up. **Set this if you add an AI key**, or strangers could run up your bill. |
    | `ANTHROPIC_API_KEY` | Your Claude key (`sk-ant-…`), if you want the AI features on for everyone. Billed to you; set a monthly limit in the Claude Console. |
+   | `YOUTUBE_API_KEY` | Optional. A YouTube Data API key so Compass can research YouTube videos and their comments. |
+   | `COACH_DAILY_LIMIT` | Optional. Compass questions per person per day; leave empty for 40. |
    | `VAPID_SUBJECT` | `mailto:` plus an email you check, e.g. `mailto:you@gmail.com`. Push services use it if something goes wrong. |
    | `SMTP_…` | Leave empty unless you set up email (step 4). |
 

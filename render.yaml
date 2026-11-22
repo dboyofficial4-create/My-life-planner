@@ -29,6 +29,12 @@ services:
       # Claude for study sets, the product finder and the build planner (billed to this key).
       - key: ANTHROPIC_API_KEY
         sync: false
+      # Optional: a YouTube Data API key so Compass can research YouTube videos and comments.
+      - key: YOUTUBE_API_KEY
+        sync: false
+      # Optional: Compass questions per person per day (default 40).
+      - key: COACH_DAILY_LIMIT
+        sync: false
       # An address push services can contact, e.g. mailto:you@example.com
       - key: VAPID_SUBJECT
         sync: false

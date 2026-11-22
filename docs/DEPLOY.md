@@ -34,7 +34,6 @@ Every `git push` to the `claude/life-improvement-app-vrherg` branch now updates 
 
 - **iPhone (Safari):** open your address → **Share → Add to Home Screen** → open Waypoint from the new icon → Settings → Reminders → **Turn on notifications**.
 - **Android (Chrome):** open your address → menu **⋮ → Install app** (or Add to Home screen) → Settings → Reminders → **Turn on notifications**.
-- Make a **recovery code** (Settings → Password & recovery) and keep it somewhere safe.
 
 ## 3. Your data on your PC
 
@@ -42,7 +41,7 @@ The online Waypoint starts empty: sign up again there. Your PC's Waypoint (`data
 
 ## 4. Email (optional): "Forgot password?" by email
 
-Recovery codes always work. To also send reset links by email, the easiest option is a Gmail account:
+Without email, “Forgot password?” can’t help anyone, so set this up before you share the site. To send reset links by email, the easiest option is a Gmail account:
 
 1. In the Google account you'll send from: **Manage your Google Account → Security**, turn on **2-Step Verification**.
 2. Then search the settings for **App passwords**, create one named "Waypoint", and copy the 16-letter password.
@@ -52,7 +51,7 @@ Recovery codes always work. To also send reset links by email, the easiest optio
    - `SMTP_USER` = that Gmail address
    - `SMTP_PASS` = the app password (not your normal Gmail password)
    - (optional) `MAIL_FROM` = `Waypoint <that address>`
-4. **Save, rebuild and deploy**. Settings → Password & recovery now shows **Reset by email: On**.
+4. **Save, rebuild and deploy**. Settings → Password now shows **Reset by email: On**.
 
 Gmail allows a few hundred emails a day, plenty for this. Any other email provider with SMTP works the same way.
 

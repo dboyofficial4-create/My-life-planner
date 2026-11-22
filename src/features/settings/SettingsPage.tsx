@@ -46,7 +46,7 @@ const SECTIONS = [
   { id: 'food', label: 'Food', modules: ['nutrition'] },
   { id: 'care', label: 'Personal care', modules: ['skincare', 'haircare'] },
   { id: 'connections', label: 'Connections' },
-  { id: 'security', label: 'Password & recovery' },
+  { id: 'security', label: 'Password' },
   { id: 'privacy', label: 'Privacy & data' },
   { id: 'about', label: 'About this version' },
 ];

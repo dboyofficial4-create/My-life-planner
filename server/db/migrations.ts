@@ -428,4 +428,9 @@ CREATE TABLE coach_consent (
 );
 `,
   },
+  {
+    id: 12,
+    name: 'remove_recovery_codes',
+    sql: `UPDATE users SET recovery_code_hash = NULL, recovery_code_created_at = NULL;`,
+  },
 ];

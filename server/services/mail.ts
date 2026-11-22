@@ -1,6 +1,6 @@
 /**
  * Outgoing email (password reset links). Optional: without SMTP settings the server simply
- * doesn't offer email reset, and recovery codes still work.
+ * doesn't offer email reset.
  *
  * SMTP_HOST, SMTP_PORT (465 = TLS, 587 = STARTTLS), SMTP_USER, SMTP_PASS, MAIL_FROM.
  * For Gmail: smtp.gmail.com, 465, your address, and a Google "app password".

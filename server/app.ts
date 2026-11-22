@@ -42,7 +42,7 @@ export interface AppConfig {
   vapid?: import('./integrations/webpush').VapidKeys;
   /** Contact for push services, e.g. mailto:you@example.com (VAPID_SUBJECT). */
   vapidSubject?: string;
-  /** Outgoing email for password reset links (SMTP_*). Without it, recovery codes still work. */
+  /** Outgoing email for password reset links (SMTP_*). Without it, “Forgot password?” can’t reset by email. */
   mailer?: import('./services/mail').Mailer;
   /** The public address of this server, e.g. https://waypoint.onrender.com (APP_URL). Used in emailed links; never taken from request headers. */
   appUrl?: string;

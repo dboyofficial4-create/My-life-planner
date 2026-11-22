@@ -11,7 +11,6 @@ import { ItemDialog, useItemAction } from '@/features/plan/ItemDialog';
 import { AgendaRow } from '@/features/plan/PlanPage';
 import { ReplanDialog, usePreview } from '@/features/plan/ReplanDialog';
 import { ReminderPrompt } from './ReminderPrompt';
-import { RecoveryPrompt } from './RecoveryPrompt';
 import { ReadinessCard } from './ReadinessCard';
 import { useMe } from '@/app/App';
 import { agePolicy } from '@shared/domain/age';
@@ -85,7 +84,6 @@ export default function TodayPage() {
       </section>
 
       <ReminderPrompt />
-      <RecoveryPrompt />
 
       {(d.modules.includes('fitness') || d.modules.includes('sports')) && <ReadinessCard onAdapt={replan} adult={adult} />}
 

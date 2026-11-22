@@ -7,7 +7,7 @@ import { body, HttpError } from '../http';
 import { INTEGRATIONS } from '../integrations/registry';
 import { parseJson } from '../db';
 import { decryptSecret, encryptSecret, hashPassword, sha256, verifyPassword } from '../auth/crypto';
-import { newPasswordSchema, newRecoveryCode, normalizeRecoveryCode } from '../auth/recovery';
+import { newPasswordSchema } from '../auth/recovery';
 import { anthropicStudyAI } from '../services/studyAI';
 import { CanvasError, canvasClient, normalizeBaseUrl, type CanvasUser } from '../integrations/canvas';
 import { CANVAS_SOURCE, syncCanvas } from '../services/canvasSync';
@@ -160,7 +160,7 @@ accountRoutes.post('/account/delete', async (c) => {
   return c.json({ ok: true });
 });
 
-/* ---------- password and recovery code ---------- */
+/* ---------- password ---------- */
 
 async function requirePassword(c: Context<AppEnv>, password: string, field = 'password') {
   if (c.var.isDemo) throw new HttpError(403, 'demo', 'The demo account has no password.');
@@ -168,14 +168,7 @@ async function requirePassword(c: Context<AppEnv>, password: string, field = 'pa
   if (!(await verifyPassword(password, row.password_hash))) throw new HttpError(401, 'bad_password', 'That password isn’t right.', { fields: { [field]: 'That password isn’t right.' } });
 }
 
-accountRoutes.get('/account/security', (c) => {
-  const row = c.var.db.get<{ recovery_code_created_at: string | null }>('SELECT recovery_code_created_at FROM users WHERE id = ?', c.var.userId);
-  return c.json({
-    isDemo: c.var.isDemo,
-    recoveryCodeCreatedAt: row?.recovery_code_created_at ?? null,
-    emailReset: !!(c.var.config.mailer && c.var.config.appUrl),
-  });
-});
+accountRoutes.get('/account/security', (c) => c.json({ isDemo: c.var.isDemo, emailReset: !!(c.var.config.mailer && c.var.config.appUrl) }));
 
 accountRoutes.post('/account/password', async (c) => {
   const input = await body(c, z.object({ current: z.string().min(1, 'Enter your current password'), password: newPasswordSchema }));
@@ -190,11 +183,3 @@ accountRoutes.post('/account/password', async (c) => {
   return c.json({ ok: true });
 });
 
-/** Make (or replace) the one-time recovery code. Shown once; only its hash is kept. */
-accountRoutes.post('/account/recovery-code', async (c) => {
-  const input = await body(c, z.object({ password: z.string().min(1, 'Enter your password') }));
-  await requirePassword(c, input.password);
-  const code = newRecoveryCode();
-  c.var.db.run('UPDATE users SET recovery_code_hash = ?, recovery_code_created_at = ? WHERE id = ?', await hashPassword(normalizeRecoveryCode(code)), new Date().toISOString(), c.var.userId);
-  return c.json({ code }, 201);
-});

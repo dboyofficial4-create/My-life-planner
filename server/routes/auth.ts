@@ -14,7 +14,7 @@ import { seedDemo } from '../services/demo';
 import { getConnInfo } from '@hono/node-server/conninfo';
 import { z } from 'zod';
 import { resetEmail } from '../services/mail';
-import { newPasswordSchema, normalizeRecoveryCode } from '../auth/recovery';
+import { newPasswordSchema } from '../auth/recovery';
 
 export const authRoutes = new Hono<AppEnv>();
 
@@ -125,40 +125,23 @@ const RESET_MINUTES = 30;
 const emailField = z.string().trim().toLowerCase().email('Enter the email you signed up with').max(254);
 
 /** What this server offers on the "Forgot password" page. */
-authRoutes.get('/recovery-options', (c) => c.json({ code: true, email: !!(c.var.config.mailer && c.var.config.appUrl) }));
+authRoutes.get('/recovery-options', (c) => c.json({ email: !!(c.var.config.mailer && c.var.config.appUrl) }));
 
 /** Sign everyone out of the account and sign this browser in with the new password. */
-async function setNewPassword(c: Context<AppEnv>, userId: string, password: string, extra?: () => void) {
+async function setNewPassword(c: Context<AppEnv>, userId: string, password: string) {
   const hash = await hashPassword(password);
   c.var.db.tx(() => {
     c.var.db.run('UPDATE users SET password_hash = ? WHERE id = ?', hash, userId);
     c.var.db.run('DELETE FROM sessions WHERE user_id = ?', userId);
     c.var.db.run('UPDATE password_resets SET used_at = ? WHERE user_id = ? AND used_at IS NULL', Date.now(), userId);
-    extra?.();
   });
   startSession(c, userId);
 }
 
-/** Reset with the one-time recovery code from Settings. The code is used up; the user makes a new one. */
-authRoutes.post('/recover', async (c) => {
-  const input = await body(c, z.object({ email: emailField, code: z.string().max(64), password: newPasswordSchema }));
-  limit(c, `recover:${clientKey(c)}`, 20, 60 * 60_000);
-  limit(c, `recover-email:${input.email}`, 5, 60 * 60_000);
-  const user = c.var.db.get<{ id: string; recovery_code_hash: string | null; is_demo: number }>('SELECT id, recovery_code_hash, is_demo FROM users WHERE email = ?', input.email);
-  const code = normalizeRecoveryCode(input.code);
-  // Same work and the same answer whether or not the account or code exists.
-  const ok = user?.recovery_code_hash && !user.is_demo ? await verifyPassword(code, user.recovery_code_hash) : (await hashPassword(code), false);
-  if (!user || !ok) throw new HttpError(401, 'bad_recovery', 'That email and recovery code don’t match.');
-  await setNewPassword(c, user.id, input.password, () => {
-    c.var.db.run('UPDATE users SET recovery_code_hash = NULL, recovery_code_created_at = NULL WHERE id = ?', user.id);
-  });
-  return c.json({ ok: true, recoveryCodeUsed: true });
-});
-
 /** Email a one-time reset link. Always answers the same, so it can't be used to find out who has an account. */
 authRoutes.post('/forgot', async (c) => {
   const { mailer, appUrl } = c.var.config;
-  if (!mailer || !appUrl) throw new HttpError(503, 'email_unavailable', 'Email reset isn’t set up on this server. Use your recovery code instead.');
+  if (!mailer || !appUrl) throw new HttpError(503, 'email_unavailable', 'Password reset by email isn’t set up on this server yet. Ask whoever runs Waypoint to turn it on.');
   const input = await body(c, z.object({ email: emailField }));
   limit(c, `forgot:${clientKey(c)}`, 10, 60 * 60_000);
   limit(c, `forgot-email:${input.email}`, 3, 60 * 60_000);

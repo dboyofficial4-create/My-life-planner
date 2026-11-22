@@ -31,47 +31,14 @@ async function account(app: ReturnType<typeof createApp>, email = 'sam@example.c
   return c;
 }
 
-describe('recovery code', () => {
-  it('is shown once, works once, and signs every other device out', async () => {
+describe('recovery codes are gone', () => {
+  it('has no code endpoints and only offers email reset when email is set up', async () => {
     const { app } = setup();
-    const laptop = await account(app);
-    const phone = client(app);
-    await phone.post('/api/auth/login', { email: 'sam@example.com', password: PW });
-    expect((await laptop.get('/api/account/security')).json).toMatchObject({ recoveryCodeCreatedAt: null, emailReset: false });
-    expect((await laptop.post('/api/account/recovery-code', { password: 'wrong password!' })).status).toBe(401);
-    const made = await laptop.post('/api/account/recovery-code', { password: PW });
-    expect(made.status).toBe(201);
-    const code: string = made.json.code;
-    expect(code).toMatch(/^[A-Z2-9]{5}(-[A-Z2-9]{5}){3}$/);
-    expect(code).not.toMatch(/[01OILUV]/);
-    expect((await laptop.get('/api/account/security')).json.recoveryCodeCreatedAt).toBeTruthy();
-
-    const stranger = client(app);
-    expect((await stranger.post('/api/auth/recover', { email: 'sam@example.com', code: 'AAAAA-AAAAA-AAAAA-AAAAA', password: 'a brand new password' })).status).toBe(401);
-    expect((await stranger.post('/api/auth/recover', { email: 'nobody@example.com', code, password: 'a brand new password' })).json.error.message).toBe('That email and recovery code don’t match.');
-    // typed loosely: lower case, spaces instead of dashes
-    const ok = await stranger.post('/api/auth/recover', { email: 'Sam@Example.com', code: code.toLowerCase().replace(/-/g, ' '), password: 'a brand new password' });
-    expect(ok.status).toBe(200);
-    expect((await stranger.get('/api/auth/me')).status).toBe(200);
-    expect((await laptop.get('/api/auth/me')).status).toBe(401);
-    expect((await phone.get('/api/auth/me')).status).toBe(401);
-    // used up
-    expect((await client(app).post('/api/auth/recover', { email: 'sam@example.com', code, password: 'another new password' })).status).toBe(401);
-    expect((await client(app).post('/api/auth/login', { email: 'sam@example.com', password: PW })).status).toBe(401);
-    expect((await client(app).post('/api/auth/login', { email: 'sam@example.com', password: 'a brand new password' })).status).toBe(200);
-  });
-
-  it('limits guesses per account, and the demo has none', async () => {
-    const { app } = setup();
-    await account(app);
-    const g = client(app);
-    const tries = [];
-    for (let i = 0; i < 6; i++) tries.push((await g.post('/api/auth/recover', { email: 'sam@example.com', code: `AAAAA-AAAAA-AAAAA-AAAA${i}`, password: 'a brand new password' })).status);
-    expect(tries.slice(0, 5).every((s) => s === 401)).toBe(true);
-    expect(tries[5]).toBe(429);
-    const demo = client(app);
-    await demo.post('/api/auth/demo');
-    expect((await demo.post('/api/account/recovery-code', { password: 'x' })).status).toBe(403);
+    const c = await account(app);
+    expect((await c.post('/api/account/recovery-code', { password: PW })).status).toBe(404);
+    expect((await client(app).post('/api/auth/recover', { email: 'sam@example.com', code: 'AAAAA-AAAAA-AAAAA-AAAAA', password: 'a brand new password' })).status).toBe(404);
+    expect((await client(app).get('/api/auth/recovery-options')).json).toEqual({ email: false });
+    expect((await c.get('/api/account/security')).json).toEqual({ isDemo: false, emailReset: false });
   });
 });
 
@@ -93,7 +60,7 @@ describe('change password', () => {
 describe('email reset link', () => {
   it('is off without email settings', async () => {
     const { app } = setup();
-    expect((await client(app).get('/api/auth/recovery-options')).json).toEqual({ code: true, email: false });
+    expect((await client(app).get('/api/auth/recovery-options')).json).toEqual({ email: false });
     expect((await client(app).post('/api/auth/forgot', { email: 'sam@example.com' })).status).toBe(503);
   });
 
@@ -145,7 +112,7 @@ describe('rate limits behind a proxy', () => {
     await account(app);
     const statuses: number[] = [];
     // a client rotating fake first entries still shares the proxy-added last entry
-    for (let i = 0; i < 21; i++) statuses.push((await client(app, { 'x-forwarded-for': `10.0.0.${i}, 203.0.113.9` }).post('/api/auth/recover', { email: `x${i}@example.com`, code: 'AAAAA', password: 'a brand new password' })).status);
+    for (let i = 0; i < 21; i++) statuses.push((await client(app, { 'x-forwarded-for': `10.0.0.${i}, 203.0.113.9` }).post('/api/auth/reset', { token: `not-a-real-reset-token-${i}`, password: 'a brand new password' })).status);
     expect(statuses.at(-1)).toBe(429);
   });
 });

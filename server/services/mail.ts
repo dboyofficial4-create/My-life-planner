@@ -30,10 +30,10 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 
 export function resetEmail(link: string, minutes: number) {
   const text = `Someone (hopefully you) asked to reset your Waypoint password.\n\nSet a new password here (the link works once, for ${minutes} minutes):\n${link}\n\nIf you didn't ask for this, ignore this email; your password stays the same.`;
-  const html = `<div style="font-family:system-ui,sans-serif;font-size:16px;line-height:1.5;color:#1f3038;max-width:520px">
+  const html = `<div style="font-family:system-ui,sans-serif;font-size:16px;line-height:1.5;color:#1d1c19;max-width:520px">
 <p>Someone (hopefully you) asked to reset your Waypoint password.</p>
-<p><a href="${esc(link)}" style="display:inline-block;background:#0d7480;color:#fff;padding:10px 20px;border-radius:999px;text-decoration:none">Set a new password</a></p>
-<p style="color:#5d6b72;font-size:14px">The link works once, for ${minutes} minutes. If you didn't ask for this, ignore this email; your password stays the same.</p>
+<p><a href="${esc(link)}" style="display:inline-block;background:#1d1c19;color:#f2f1ed;padding:10px 20px;border-radius:4px;text-decoration:none">Set a new password</a></p>
+<p style="color:#5f5d55;font-size:14px">The link works once, for ${minutes} minutes. If you didn't ask for this, ignore this email; your password stays the same.</p>
 </div>`;
   return { subject: 'Reset your Waypoint password', text, html };
 }

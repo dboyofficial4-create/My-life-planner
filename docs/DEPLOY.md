@@ -54,6 +54,21 @@ Recovery codes always work. To also send reset links by email, the easiest optio
 
 Gmail allows a few hundred emails a day, plenty for this. Any other email provider with SMTP works the same way.
 
+## Your own domain (e.g. from domain.com)
+
+The site keeps running on Render; the domain just points to it. Updates (`git push`) keep working the same way.
+
+1. **Render:** open the **waypoint** service → **Settings → Custom Domains → Add Custom Domain**. Add `yourdomain.com`, then add `www.yourdomain.com` too. Render shows the exact DNS records to create; use those values.
+2. **domain.com:** sign in → your domain → **DNS & Nameservers** (sometimes called "Manage DNS"). Add the records Render showed you. Usually:
+   - an **A** record for `@` (the bare domain) pointing to the IP address Render gives you;
+   - a **CNAME** record for `www` pointing to your service's `….onrender.com` address.
+
+   Delete any existing **A** record for `@` or **CNAME** for `www` that domain.com added for its "parked" or website-builder page, or they'll fight with Render's.
+3. **Wait.** DNS changes usually show up within an hour but can take up to 48. Back in Render, press **Verify** next to each domain. Render then sets up HTTPS (the padlock) by itself, free.
+4. **Update APP_URL:** service → **Environment → APP_URL** → `https://yourdomain.com` → **Save, rebuild and deploy**. Password-reset emails then link to the new address.
+
+Moving from the `onrender.com` address to your domain counts as a new website to browsers, so anyone already using the old address signs in once more and turns notifications back on. Their accounts and data are unchanged. Easiest is to set up the domain before you share the link.
+
 ## 5. Backups
 
 - Every day Waypoint saves a full copy of the database to `/var/data/backups/` and keeps the newest 7 (a bad update or a mistake can be undone from these).
